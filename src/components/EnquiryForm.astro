@@ -1,0 +1,185 @@
+---
+import { site } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+import type { Service } from '../lib/services';
+
+interface Props {
+  lang: Lang;
+  services: Service[];
+}
+
+const { lang, services } = Astro.props;
+const s = t(lang);
+const serviceNames = services.map((svc) => (lang === 'ta' && svc.name_ta) || svc.name_en);
+const strings = {
+  greeting: s.waGreeting,
+  sending: s.form.sending,
+  done: s.form.done,
+  error: s.form.error,
+  required: s.form.required,
+  submit: s.form.submit,
+  intro: s.waIntro('{name}'),
+  service: s.waService('{service}'),
+  date: s.waDate('{date}'),
+};
+---
+
+<form class="card enquiry" id="enquiry" novalidate data-lang={lang} data-wa={site.whatsapp} data-strings={JSON.stringify(strings)}>
+  <div class="field">
+    <label for="f-name">{s.form.name}</label>
+    <input id="f-name" name="name" autocomplete="name" required maxlength="80" />
+  </div>
+  <div class="field">
+    <label for="f-phone">{s.form.phone}</label>
+    <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="98765 43210" maxlength="20" />
+  </div>
+  <div class="field">
+    <label for="f-service">{s.form.service}</label>
+    <select id="f-service" name="service">
+      <option value="">{s.form.servicePlaceholder}</option>
+      {serviceNames.map((n) => <option>{n}</option>)}
+      <option>{s.form.other}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-date">{s.form.date}</label>
+    <input id="f-date" name="preferred_date" type="date" />
+  </div>
+  <div class="field field--full">
+    <label for="f-message">{s.form.message}</label>
+    <textarea id="f-message" name="message" rows="3" maxlength="1000" placeholder={s.form.messagePlaceholder}></textarea>
+  </div>
+  <!-- Honeypot: real people never see or fill this. -->
+  <div class="visually-hidden" aria-hidden="true">
+    <label for="f-website">Website</label>
+    <input id="f-website" name="website" tabindex="-1" autocomplete="off" />
+  </div>
+  <p class="field--full enquiry__hint">{s.form.photoHint}</p>
+  <div class="field--full">
+    <button type="submit" class="btn btn--whatsapp">{s.form.submit}</button>
+    <p class="enquiry__status" role="status" aria-live="polite"></p>
+  </div>
+</form>
+
+<style>
+  .enquiry {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field--full {
+    grid-column: 1 / -1;
+  }
+  label {
+    font-weight: 600;
+  }
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-height: 48px;
+    width: 100%;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--periwinkle);
+  }
+  .enquiry__hint {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+  .enquiry__status {
+    margin: 10px 0 0;
+    min-height: 1.5em;
+  }
+  .enquiry__status[data-tone='error'] {
+    color: #a3242f;
+  }
+</style>
+
+<script>
+  import { getAttribution, metaBrowserIds, newEventId, sourceLabel, trackEvent, trackingEnabled } from '../scripts/tracking';
+
+  const form = document.querySelector<HTMLFormElement>('#enquiry');
+  if (form) {
+    const str = JSON.parse(form.dataset.strings || '{}');
+    const status = form.querySelector<HTMLElement>('.enquiry__status')!;
+    const button = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    const startedAt = Date.now();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      const name = data.name.trim();
+      const digits = data.phone.replace(/\D/g, '');
+      if (!name || digits.length < 10) {
+        status.dataset.tone = 'error';
+        status.textContent = str.required;
+        return;
+      }
+
+      button.disabled = true;
+      status.dataset.tone = '';
+      status.textContent = str.sending;
+
+      const eventId = newEventId();
+      const attribution = getAttribution();
+      let saved = false;
+      try {
+        const res = await fetch('/.netlify/functions/enquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...data,
+            name,
+            language: form.dataset.lang,
+            source_page: location.pathname,
+            attribution,
+            consent: trackingEnabled(),
+            event_id: eventId,
+            event_source_url: location.href,
+            elapsed_ms: Date.now() - startedAt,
+            ...metaBrowserIds(),
+          }),
+        });
+        saved = res.ok;
+      } catch {
+        saved = false;
+      }
+
+      // The same event_id was sent to the server, which reports it through the
+      // Conversions API; Meta keeps one of the two.
+      if (saved) trackEvent('Lead', { content_name: data.service || 'enquiry' }, eventId);
+
+      const lines = [
+        str.greeting,
+        str.intro.replace('{name}', name),
+        data.service && str.service.replace('{service}', data.service),
+        data.preferred_date && str.date.replace('{date}', data.preferred_date),
+        data.message?.trim(),
+        `(${sourceLabel()})`,
+      ].filter(Boolean);
+      const wa = `https://wa.me/${form.dataset.wa}?text=${encodeURIComponent(lines.join('\n'))}`;
+
+      status.dataset.tone = saved ? '' : 'error';
+      status.textContent = saved ? str.done : str.error;
+      // Never lose the customer: WhatsApp opens even if saving failed.
+      setTimeout(() => {
+        location.href = wa;
+        button.disabled = false;
+      }, saved ? 600 : 1800);
+    });
+  }
+</script>

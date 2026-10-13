@@ -1,0 +1,64 @@
+---
+// Reviews come from src/data/reviews.json. Remove "sample": true (or the
+// whole entry) once real reviews replace the placeholders.
+import reviews from '../data/reviews.json';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+---
+
+{
+  reviews.length > 0 && (
+    <section class="section section--tint">
+      <div class="container">
+        <h2 class="center">{s.reviewsTitle}</h2>
+        <div class="grid grid--3">
+          {reviews.map((r) => (
+            <figure class="card review">
+              <div class="review__stars" aria-label={`${r.rating} / 5`}>
+                {'★'.repeat(r.rating)}
+                {'☆'.repeat(5 - r.rating)}
+              </div>
+              <blockquote>{lang === 'ta' ? r.text_ta : r.text_en}</blockquote>
+              <figcaption>— {r.name}</figcaption>
+              {r.sample && <p class="review__sample">{s.sampleReview}</p>}
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .review {
+    margin: 0;
+  }
+  .review__stars {
+    color: #c79a1e;
+    letter-spacing: 2px;
+    font-size: 1.1rem;
+  }
+  .review blockquote {
+    margin: 10px 0;
+    font-size: 1.05rem;
+  }
+  .review figcaption {
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .review__sample {
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: #8a5a00;
+    background: #fff4d6;
+    border-radius: 6px;
+    padding: 2px 8px;
+    display: inline-block;
+  }
+</style>

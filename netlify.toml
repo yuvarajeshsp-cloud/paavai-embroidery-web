@@ -1,0 +1,35 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Short links for the Instagram bio / stories, already UTM-tagged.
+[[redirects]]
+  from = "/ig"
+  to = "/?utm_source=instagram&utm_medium=social&utm_campaign=bio"
+  status = 302
+
+[[redirects]]
+  from = "/ig-story"
+  to = "/?utm_source=instagram&utm_medium=story&utm_campaign=story"
+  status = 302
+
+[[redirects]]
+  from = "/ta/ig"
+  to = "/ta/?utm_source=instagram&utm_medium=social&utm_campaign=bio"
+  status = 302

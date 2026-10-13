@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+import EnquiryForm from '../components/EnquiryForm.astro';
+import { instagramLink, site, whatsappLink } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+import { getServices } from '../lib/services';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+const services = await getServices();
+const a = site.address;
+const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.mapQuery)}`;
+---
+
+<Base lang={lang} title={s.contactTitle} description={s.contactIntro} path="/contact">
+  <section class="section">
+    <div class="container contact">
+      <div>
+        <h1>{s.contactTitle}</h1>
+        <p class="section__intro">{s.contactIntro}</p>
+        <EnquiryForm lang={lang} services={services} />
+      </div>
+      <aside class="contact__info">
+        <div class="card">
+          <h2 class="h3">{s.phoneLabel}</h2>
+          <p>
+            <a href={whatsappLink(s.waGreeting)} data-wa="contact-page" rel="noopener">{site.phoneDisplay}</a><br />
+            <a href={`tel:+${site.whatsapp}`}>{lang === 'ta' ? 'அழைக்க' : 'Call'}</a> ·
+            <a href={instagramLink} rel="noopener">@{site.instagram}</a>
+          </p>
+          <h2 class="h3">{s.hoursLabel}</h2>
+          <p>{site.hours[lang]}</p>
+          {site.showMap && (
+            <>
+              <h2 class="h3">{s.addressLabel}</h2>
+              <address>
+                {a.line1}<br />
+                {a.line2}, {a.city}<br />
+                {a.state} {a.pin}
+              </address>
+              <a class="btn btn--ghost" href={mapsUrl} rel="noopener">{s.directions}</a>
+            </>
+          )}
+        </div>
+        {site.showMap && (
+          <iframe
+            class="map"
+            title="Map"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(site.mapQuery)}&output=embed`}
+          />
+        )}
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .contact {
+    display: grid;
+    gap: 32px;
+  }
+  @media (min-width: 960px) {
+    .contact {
+      grid-template-columns: 1.6fr 1fr;
+      align-items: start;
+    }
+  }
+  .h3 {
+    font-size: 1.05rem;
+    font-family: var(--font-body);
+    margin-bottom: 4px;
+  }
+  address {
+    font-style: normal;
+    margin-bottom: 12px;
+  }
+  .map {
+    width: 100%;
+    height: 300px;
+    border: 0;
+    border-radius: var(--radius);
+    margin-top: 20px;
+  }
+</style>

@@ -1,0 +1,117 @@
+---
+import { categoryLabels, type GalleryItem } from '../data/gallery';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  items: GalleryItem[];
+  filters?: boolean;
+}
+
+const { lang, items, filters = false } = Astro.props;
+const s = t(lang);
+const categories = [...new Set(items.map((i) => i.category))];
+---
+
+{
+  filters && (
+    <div class="filters" role="group" aria-label="Filter">
+      <button type="button" class="filter" aria-pressed="true" data-filter="all">
+        {s.all}
+      </button>
+      {categories.map((c) => (
+        <button type="button" class="filter" aria-pressed="false" data-filter={c}>
+          {categoryLabels[c][lang]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+<ul class="gallery grid grid--4">
+  {
+    items.map((item) => (
+      <li class="gallery__item" data-category={item.category}>
+        <img
+          src={item.src}
+          alt={lang === 'ta' ? item.alt_ta : item.alt_en}
+          loading="lazy"
+          decoding="async"
+          width="600"
+          height="600"
+        />
+        <span class="tag gallery__tag">{categoryLabels[item.category][lang]}</span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .gallery {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .gallery__item {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--lavender);
+    aspect-ratio: 1;
+  }
+  .gallery__item[hidden] {
+    display: none;
+  }
+  .gallery__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  .gallery__item:hover img {
+    transform: scale(1.03);
+  }
+  .gallery__tag {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    background: rgb(255 255 255 / 0.9);
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .filter {
+    font: inherit;
+    font-weight: 600;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 2px solid var(--periwinkle);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .filter[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.filters').forEach((group) => {
+    const list = group.nextElementSibling;
+    group.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-filter]');
+      if (!btn || !list) return;
+      const f = btn.dataset.filter;
+      group.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      list.querySelectorAll<HTMLElement>('[data-category]').forEach((li) => {
+        li.hidden = f !== 'all' && li.dataset.category !== f;
+      });
+    });
+  });
+</script>

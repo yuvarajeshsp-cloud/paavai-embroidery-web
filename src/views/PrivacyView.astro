@@ -1,0 +1,47 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../config/site';
+import type { Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+// Kept in English for both languages: it is a legal notice and should be
+// reviewed before translation.
+---
+
+<Base lang={lang} title="Privacy" description="How Paavai Embroidery uses your information." path="/privacy">
+  <section class="section">
+    <div class="container prose">
+      <h1>Privacy</h1>
+      <p>This notice explains what {site.name} collects through this website and why.</p>
+      <h2>Enquiries</h2>
+      <p>
+        When you send an enquiry we save your name, phone number and the details you enter so we can reply and
+        prepare your order. We do not sell or share them with anyone except as needed to run our shop.
+      </p>
+      <h2>Cookies and Meta (Facebook / Instagram)</h2>
+      <p>
+        Only if you click "Accept", we use the Meta Pixel and Meta Conversions API to measure which of our Instagram and
+        Facebook posts and ads bring visitors here. This sends Meta details such as the pages you view and, when you
+        send an enquiry, a scrambled (hashed) form of your phone number and first name. If you decline, none of this is
+        sent and the site works the same.
+      </p>
+      <p>To change your choice, clear this site's data in your browser and reload the page.</p>
+      <h2>Contact</h2>
+      <p>For any question about your data, or to ask us to delete it, message us on WhatsApp at {site.phoneDisplay}.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .prose {
+    max-width: 760px;
+  }
+  .prose h2 {
+    font-size: 1.3rem;
+    margin-top: 1.6em;
+  }
+</style>

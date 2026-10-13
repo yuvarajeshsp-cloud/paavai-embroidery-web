@@ -1,0 +1,75 @@
+---
+import Logo from './Logo.astro';
+import { site, instagramLink, whatsappLink } from '../config/site';
+import { localePath, t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+---
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div>
+      <Logo lang={lang} />
+      <p class="footer__tag">{s.tagline}</p>
+    </div>
+    <div>
+      <h3>{s.hoursLabel}</h3>
+      <p>{site.hours[lang]}</p>
+    </div>
+    <div>
+      <h3>{s.phoneLabel}</h3>
+      <p>
+        <a href={whatsappLink(s.waGreeting)} data-wa="footer" rel="noopener">{site.phoneDisplay}</a><br />
+        <a href={instagramLink} rel="noopener">@{site.instagram}</a>
+      </p>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© {new Date().getFullYear()} {site.name}. {s.footerRights}</span>
+    <a href={localePath(lang, '/privacy')}>{s.privacy}</a>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--ink);
+    color: #e9e9ff;
+    padding: 48px 0 96px;
+  }
+  .footer :global(.logo),
+  .footer :global(.logo__sub) {
+    color: #fff;
+  }
+  .footer h3 {
+    color: var(--lavender);
+    font-size: 1rem;
+    font-family: var(--font-body);
+  }
+  .footer a {
+    color: #fff;
+  }
+  .footer__grid {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .footer__tag {
+    margin-top: 12px;
+    color: var(--lavender);
+  }
+  .footer__bottom {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid rgb(211 211 255 / 0.2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+</style>

@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+import GalleryGrid from '../components/GalleryGrid.astro';
+import InstagramFeed from '../components/InstagramFeed.astro';
+import { gallery } from '../data/gallery';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+---
+
+<Base lang={lang} title={s.galleryTitle} description={s.galleryIntro} path="/gallery">
+  <section class="section">
+    <div class="container">
+      <h1>{s.galleryTitle}</h1>
+      <p class="section__intro">{s.galleryIntro}</p>
+      <GalleryGrid lang={lang} items={gallery} filters />
+    </div>
+  </section>
+  <InstagramFeed lang={lang} />
+</Base>

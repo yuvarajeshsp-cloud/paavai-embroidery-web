@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import Reviews from '../components/Reviews.astro';
+import { localePath, t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+---
+
+<Base lang={lang} title={s.aboutTitle} description={s.aboutText[0]} path="/about">
+  <section class="section">
+    <div class="container about">
+      <div>
+        <h1>{s.aboutTitle}</h1>
+        {s.aboutText.map((p) => <p>{p}</p>)}
+        <a class="btn btn--primary" href={localePath(lang, '/contact')}>{s.ctaEnquire}</a>
+      </div>
+      <img src="/images/about.svg" alt="" width="480" height="480" />
+    </div>
+  </section>
+  <section class="section section--tint">
+    <div class="container">
+      <h2>{s.whyTitle}</h2>
+      <div class="grid grid--3">
+        {s.why.map((w) => (
+          <div class="card">
+            <h3>{w.title}</h3>
+            <p>{w.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+  <Reviews lang={lang} />
+</Base>
+
+<style>
+  .about {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+  }
+  .about p {
+    font-size: 1.1rem;
+  }
+  .about img {
+    width: min(100%, 420px);
+    margin: 0 auto;
+    border-radius: var(--radius);
+  }
+  @media (min-width: 860px) {
+    .about {
+      grid-template-columns: 1.2fr 1fr;
+    }
+  }
+</style>

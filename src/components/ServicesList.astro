@@ -1,0 +1,88 @@
+---
+import { whatsappLink } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+import { formatPrice, serviceSlug, type Service } from '../lib/services';
+
+interface Props {
+  lang: Lang;
+  services: Service[];
+  limit?: number;
+}
+
+const { lang, services, limit } = Astro.props;
+const s = t(lang);
+const shown = limit ? services.slice(0, limit) : services;
+const name = (svc: Service) => (lang === 'ta' && svc.name_ta) || svc.name_en;
+const desc = (svc: Service) => (lang === 'ta' && svc.description_ta) || svc.description_en;
+---
+
+<div class="grid grid--3 services">
+  {
+    shown.map((svc) => (
+      <article class="card service" id={serviceSlug(svc.name_en)}>
+        <span class="tag">{svc.category}</span>
+        <h3>{name(svc)}</h3>
+        {desc(svc) && <p class="service__desc">{desc(svc)}</p>}
+        <div class="service__foot">
+          {svc.starting_price != null ? (
+            <p class="service__price">
+              <span>{s.from}</span> {formatPrice(svc.starting_price)}
+            </p>
+          ) : (
+            <span />
+          )}
+          <a
+            class="service__ask"
+            href={whatsappLink(`${s.waGreeting} ${s.waService(name(svc))}`)}
+            data-wa={`service:${svc.name_en}`}
+            rel="noopener"
+          >
+            {s.askQuote} →
+          </a>
+        </div>
+      </article>
+    ))
+  }
+</div>
+
+<style>
+  .service {
+    scroll-margin-top: 88px;
+    display: flex;
+    flex-direction: column;
+  }
+  .service .tag {
+    align-self: flex-start;
+  }
+  .service h3 {
+    margin-top: 12px;
+  }
+  .service__desc {
+    color: var(--ink-soft);
+    flex: 1;
+  }
+  .service__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+  }
+  .service__price {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .service__price span {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+  .service__ask {
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>

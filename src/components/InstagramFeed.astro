@@ -1,0 +1,62 @@
+---
+import { instagramLink, site } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+import { getInstagramPosts } from '../lib/instagram';
+
+interface Props {
+  lang: Lang;
+  limit?: number;
+}
+
+const { lang, limit = 8 } = Astro.props;
+const s = t(lang);
+const posts = (await getInstagramPosts()).slice(0, limit);
+---
+
+{
+  posts.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <h2>{s.instagramTitle}</h2>
+        <ul class="ig grid grid--4">
+          {posts.map((p) => (
+            <li>
+              <a href={p.permalink} rel="noopener" target="_blank">
+                <img
+                  src={p.media_type === 'VIDEO' ? p.thumbnail_url : p.media_url}
+                  alt={p.caption?.slice(0, 120) || `Instagram post by @${site.instagram}`}
+                  loading="lazy"
+                  decoding="async"
+                  width="400"
+                  height="400"
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p class="ig__follow">
+          <a class="btn btn--ghost" href={instagramLink} rel="noopener">
+            {s.followUs} @{site.instagram}
+          </a>
+        </p>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .ig {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .ig img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: var(--radius);
+  }
+  .ig__follow {
+    margin-top: 20px;
+  }
+</style>

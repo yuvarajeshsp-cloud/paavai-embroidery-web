@@ -1,0 +1,92 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ConsentBanner from '../components/ConsentBanner.astro';
+import WhatsAppFloat from '../components/WhatsAppFloat.astro';
+import { site } from '../config/site';
+import { localePath, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  // Page path without the language prefix, e.g. '/gallery'.
+  path: string;
+  image?: string;
+}
+
+const { lang, title, description, path, image = '/images/og-default.png' } = Astro.props;
+const fullTitle = path === '/' ? `${title}` : `${title} · ${lang === 'ta' ? site.nameTa : site.name}`;
+const canonical = new URL(localePath(lang, path), site.url).toString();
+const altEn = new URL(localePath('en', path), site.url).toString();
+const altTa = new URL(localePath('ta', path), site.url).toString();
+
+const localBusiness = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: site.name,
+  alternateName: site.nameTa,
+  url: site.url,
+  telephone: site.phoneDisplay.replace(/\s/g, ''),
+  openingHours: site.openingHours,
+  sameAs: [`https://instagram.com/${site.instagram}`],
+  ...(site.showMap ? {
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: `${site.address.line1}, ${site.address.line2}`,
+      addressLocality: site.address.city,
+      addressRegion: site.address.state,
+      postalCode: site.address.pin,
+      addressCountry: 'IN',
+    },
+  } : {}),
+};
+---
+
+<!doctype html>
+<html lang={lang === 'ta' ? 'ta-IN' : 'en-IN'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en-IN" href={altEn} />
+    <link rel="alternate" hreflang="ta-IN" href={altTa} />
+    <link rel="alternate" hreflang="x-default" href={altEn} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#d3d3ff" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, site.url).toString()} />
+    <meta property="og:locale" content={lang === 'ta' ? 'ta_IN' : 'en_IN'} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;600;700&family=Noto+Serif+Tamil:wght@600;700&family=Playfair+Display:wght@600;700&display=swap"
+    />
+
+    <script type="application/ld+json" set:html={JSON.stringify(localBusiness)} />
+  </head>
+  <body>
+    <a class="skip" href="#main">{lang === 'ta' ? 'உள்ளடக்கத்திற்குச் செல்' : 'Skip to content'}</a>
+    <Header lang={lang} path={path} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <WhatsAppFloat lang={lang} />
+    <ConsentBanner lang={lang} />
+    <script>
+      import { initTracking } from '../scripts/tracking';
+      initTracking();
+    </script>
+  </body>
+</html>

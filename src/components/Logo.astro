@@ -1,0 +1,60 @@
+---
+// Text logo until the real logo file is added. To use your logo: save it as
+// public/images/logo.svg (or .png) and set LOGO_SRC below.
+import { site } from '../config/site';
+import type { Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const LOGO_SRC: string | null = null; // e.g. '/images/logo.svg'
+const { lang } = Astro.props;
+---
+
+{
+  LOGO_SRC ? (
+    <img src={LOGO_SRC} alt={site.name} height="44" class="logo-img" />
+  ) : (
+    <span class="logo">
+      <svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true">
+        <circle cx="20" cy="20" r="19" fill="#d3d3ff" />
+        <path d="M20 7c3 6 9 8 13 13-4 5-10 7-13 13-3-6-9-8-13-13 4-5 10-7 13-13Z" fill="#9f9fff" />
+        <circle cx="20" cy="20" r="4.5" fill="#3b38a6" />
+      </svg>
+      <span class="logo__text">
+        <span class="logo__name">Paavai</span>
+        <span class="logo__sub">{lang === 'ta' ? 'எம்ப்ராய்டரி' : 'Embroidery'}</span>
+      </span>
+    </span>
+  )
+}
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+  .logo__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+  .logo__name {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1.35rem;
+  }
+  .logo__sub {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .logo-img {
+    height: 44px;
+    width: auto;
+  }
+</style>
