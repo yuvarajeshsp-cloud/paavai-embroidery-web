@@ -1,0 +1,4 @@
+# Short links for the Instagram bio / stories, already UTM-tagged.
+/ig        /?utm_source=instagram&utm_medium=social&utm_campaign=bio     302
+/ig-story  /?utm_source=instagram&utm_medium=story&utm_campaign=story    302
+/ta/ig     /ta/?utm_source=instagram&utm_medium=social&utm_campaign=bio  302

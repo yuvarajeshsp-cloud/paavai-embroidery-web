@@ -54,7 +54,7 @@ Environment variables: `PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SHOP_ORG_
 
 ## Instagram short links
 
-`netlify.toml` defines tagged redirects for Instagram:
+`public/_redirects` defines tagged redirects for Instagram:
 
 - `paavaiembroidery.com/ig` — use in the Instagram bio
 - `paavaiembroidery.com/ig-story` — use in story link stickers
