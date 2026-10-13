@@ -8,6 +8,8 @@ Public website for **paavaiembroidery.com**: English + Tamil, built with
 - **Prices:** read live from Shop Manager (`website_services`, published rows) every time the site builds.
 - **Meta:** Pixel + Conversions API (deduplicated), Instagram feed, Instagram/Facebook Shop catalog feed at `/catalog.xml`, UTM attribution, cookie consent. See [docs/META_SETUP.md](docs/META_SETUP.md).
 
+**New here? Start with [docs/HANDOVER.md](docs/HANDOVER.md).**
+
 ## Run locally
 
 ```sh
