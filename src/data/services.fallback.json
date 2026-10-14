@@ -1,7 +1,0 @@
-[
-  { "category": "Bridal", "name_en": "Bridal aari work blouse", "name_ta": "மணப்பெண் ஆரி பிளவுஸ்", "description_en": "Full hand aari with stones, beads and zardosi.", "description_ta": "கல், மணி, ஜர்தோசியுடன் முழு கை ஆரி வேலை.", "starting_price": 3500, "price_unit": "piece", "sort_order": 1 },
-  { "category": "Blouse", "name_en": "Designer blouse embroidery", "name_ta": "டிசைனர் பிளவுஸ் எம்ப்ராய்டரி", "description_en": "Neck, sleeve and back designs.", "description_ta": "கழுத்து, கை, முதுகு டிசைன்கள்.", "starting_price": 800, "price_unit": "piece", "sort_order": 2 },
-  { "category": "Machine", "name_en": "Computer embroidery", "name_ta": "கம்ப்யூட்டர் எம்ப்ராய்டரி", "description_en": "Precise machine embroidery on any fabric.", "description_ta": "எந்தத் துணியிலும் துல்லியமான இயந்திர எம்ப்ராய்டரி.", "starting_price": 250, "price_unit": "piece", "sort_order": 3 },
-  { "category": "Machine", "name_en": "Names & logos", "name_ta": "பெயர் & லோகோ", "description_en": "Uniforms, school and company logos, gifts.", "description_ta": "சீருடை, பள்ளி மற்றும் நிறுவன லோகோ, பரிசுகள்.", "starting_price": 60, "price_unit": "piece", "sort_order": 4 },
-  { "category": "Kids", "name_en": "Kids wear embroidery", "name_ta": "குழந்தைகள் உடை எம்ப்ராய்டரி", "description_en": "Pattu pavadai, frocks and festive wear.", "description_ta": "பட்டுப் பாவாடை, ஃப்ராக், விழா உடைகள்.", "starting_price": 400, "price_unit": "piece", "sort_order": 5 }
-]

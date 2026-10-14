@@ -34,11 +34,13 @@ const posts = (await getInstagramPosts()).slice(0, limit);
             </li>
           ))}
         </ul>
-        <p class="ig__follow">
-          <a class="btn btn--ghost" href={instagramLink} rel="noopener">
-            {s.followUs} @{site.instagram}
-          </a>
-        </p>
+        {instagramLink && (
+          <p class="ig__follow">
+            <a class="btn btn--ghost" href={instagramLink} target="_blank" rel="noopener">
+              {s.followUs} @{site.instagram}
+            </a>
+          </p>
+        )}
       </div>
     </section>
   )

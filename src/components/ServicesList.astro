@@ -1,4 +1,5 @@
 ---
+import { categoryLabel } from '../lib/gallery';
 import { whatsappLink } from '../config/site';
 import { t, type Lang } from '../i18n/strings';
 import { formatPrice, serviceSlug, type Service } from '../lib/services';
@@ -20,7 +21,7 @@ const desc = (svc: Service) => (lang === 'ta' && svc.description_ta) || svc.desc
   {
     shown.map((svc) => (
       <article class="card service" id={serviceSlug(svc.name_en)}>
-        <span class="tag">{svc.category}</span>
+        <span class="tag">{categoryLabel(svc.category, lang)}</span>
         <h3>{name(svc)}</h3>
         {desc(svc) && <p class="service__desc">{desc(svc)}</p>}
         <div class="service__foot">

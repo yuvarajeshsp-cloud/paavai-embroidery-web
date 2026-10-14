@@ -71,6 +71,10 @@ export const strings = {
     footerRights: 'All rights reserved.',
     privacy: 'Privacy',
     sampleReview: 'Sample review — to be replaced with a real one',
+    googleReviews: 'Read our reviews on Google',
+    writeReview: 'Write a review',
+    playVideo: 'Play video',
+    followLabel: 'Follow us',
     skip: 'Skip to content',
   },
   ta: {
@@ -140,6 +144,10 @@ export const strings = {
     footerRights: 'அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை.',
     privacy: 'தனியுரிமை',
     sampleReview: 'மாதிரி கருத்து — உண்மையானதுடன் மாற்றப்படும்',
+    googleReviews: 'Google-ல் எங்கள் கருத்துகளைப் படிக்க',
+    writeReview: 'கருத்து எழுதுங்கள்',
+    playVideo: 'வீடியோவை இயக்கு',
+    followLabel: 'எங்களைப் பின்தொடர',
     skip: 'உள்ளடக்கத்திற்குச் செல்',
   },
 } as const;

@@ -24,7 +24,23 @@ const strings = {
 };
 ---
 
-<form class="card enquiry" id="enquiry" novalidate data-lang={lang} data-wa={site.whatsapp} data-strings={JSON.stringify(strings)}>
+<!-- Saved by Netlify Forms (Netlify → Forms → enquiry; e-mail alerts can be set there). -->
+<form
+  class="card enquiry"
+  id="enquiry"
+  name="enquiry"
+  method="POST"
+  data-netlify="true"
+  netlify-honeypot="website"
+  novalidate
+  data-lang={lang}
+  data-wa={site.whatsapp}
+  data-strings={JSON.stringify(strings)}
+>
+  <input type="hidden" name="form-name" value="enquiry" />
+  <input type="hidden" name="language" value={lang} />
+  <input type="hidden" name="source_page" />
+  <input type="hidden" name="came_from" />
   <div class="field">
     <label for="f-name">{s.form.name}</label>
     <input id="f-name" name="name" autocomplete="name" required maxlength="80" />
@@ -136,27 +152,38 @@ const strings = {
 
       const eventId = newEventId();
       const attribution = getAttribution();
+      data.source_page = location.pathname;
+      data.came_from = sourceLabel();
       let saved = false;
       try {
-        const res = await fetch('/.netlify/functions/enquiry', {
+        const res = await fetch('/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...data,
-            name,
-            language: form.dataset.lang,
-            source_page: location.pathname,
-            attribution,
-            consent: trackingEnabled(),
-            event_id: eventId,
-            event_source_url: location.href,
-            elapsed_ms: Date.now() - startedAt,
-            ...metaBrowserIds(),
-          }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ ...data, name }).toString(),
         });
         saved = res.ok;
       } catch {
         saved = false;
+      }
+
+      // Bots fill the hidden field or submit faster than a person can type;
+      // only real enquiries are reported to Meta, and only with consent.
+      const human = !data.website && Date.now() - startedAt > 2500;
+      if (saved && human && trackingEnabled()) {
+        fetch('/.netlify/functions/enquiry', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            phone: data.phone,
+            service: data.service,
+            attribution,
+            event_id: eventId,
+            event_source_url: location.href,
+            ...metaBrowserIds(),
+          }),
+        }).catch(() => {});
       }
 
       // The same event_id was sent to the server, which reports it through the

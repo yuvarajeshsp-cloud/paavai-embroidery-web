@@ -1,0 +1,180 @@
+# Admin page for the website: https://paavaiembroidery.com/admin
+# Log in with a GitHub account that can write to the repo. Each "Publish"
+# saves a commit to main and Netlify updates the live site in about a minute.
+backend:
+  name: github
+  repo: yuvarajeshsp-cloud/paavai-embroidery-web
+  branch: main
+  commit_messages:
+    update: "Admin: update {{collection}} “{{slug}}”"
+    uploadMedia: "Admin: upload {{path}}"
+    deleteMedia: "Admin: delete {{path}}"
+
+# `npx decap-server` + `npm run dev` lets you use /admin locally without
+# logging in (changes are written straight to the files on your computer).
+local_backend: true
+
+site_url: https://paavaiembroidery.com
+display_url: https://paavaiembroidery.com
+logo_url: /favicon.svg
+
+media_folder: public/images/uploads
+public_folder: /images/uploads
+
+collections:
+  - name: content
+    label: Website
+    editor:
+      preview: false
+    files:
+      # ------------------------------------------------------------------
+      - name: gallery
+        label: Gallery – photos & videos
+        file: src/data/gallery.json
+        format: json
+        fields:
+          - name: items
+            label: Gallery items
+            label_singular: item
+            widget: list
+            summary: "{{fields.category}} · {{fields.caption_en}}"
+            hint: "Drag to reorder. Items marked “Show on home page” appear in “Recent work” (first 4)."
+            types:
+              - name: photo
+                label: Photo
+                widget: object
+                summary: "📷 {{fields.category}} · {{fields.caption_en}}"
+                fields:
+                  - { name: image, label: Photo, widget: image, hint: "JPG or PNG straight from your phone is fine — the website resizes it automatically." }
+                  - &category { name: category, label: Category, widget: select, options: [Bridal, Blouse, Machine, Kids, Other], default: Bridal }
+                  - &caption_en { name: caption_en, label: Caption (English), widget: string, required: false, hint: "Short description, e.g. “Bridal aari blouse with zardosi”. Also helps Google find the photo." }
+                  - &caption_ta { name: caption_ta, label: Caption (Tamil), widget: string, required: false }
+                  - &featured { name: featured, label: Show on home page, widget: boolean, default: false, required: false }
+                  - &hidden { name: hidden, label: Hide from website, widget: boolean, default: false, required: false }
+              - name: video
+                label: Video (upload)
+                widget: object
+                summary: "🎬 {{fields.category}} · {{fields.caption_en}}"
+                fields:
+                  - name: video
+                    label: Video file
+                    widget: file
+                    media_folder: /public/videos
+                    public_folder: /videos
+                    hint: "MP4, short clip (under 30 seconds, under 20 MB). For longer videos, upload to YouTube or Instagram and add a link item instead."
+                  - { name: poster, label: Cover photo (optional), widget: image, required: false, hint: "Shown before the video plays. Recommended." }
+                  - *category
+                  - *caption_en
+                  - *caption_ta
+                  - *featured
+                  - *hidden
+              - name: youtube
+                label: YouTube video (link)
+                widget: object
+                summary: "▶ {{fields.category}} · {{fields.caption_en}}"
+                fields:
+                  - { name: url, label: YouTube link, widget: string, pattern: ["(youtube\\.com|youtu\\.be)/", "Paste a YouTube or YouTube Shorts link"] }
+                  - *category
+                  - *caption_en
+                  - *caption_ta
+                  - *featured
+                  - *hidden
+              - name: instagram
+                label: Instagram post / reel (link)
+                widget: object
+                summary: "Instagram · {{fields.category}} · {{fields.caption_en}}"
+                fields:
+                  - { name: url, label: Instagram link, widget: string, pattern: ["instagram\\.com/", "Paste a link to an Instagram post or reel"], hint: "In Instagram: ⋯ → Copy link." }
+                  - { name: image, label: Cover photo (optional), widget: image, required: false, hint: "Instagram doesn't allow other sites to show its photos, so add a screenshot or the original photo here." }
+                  - *category
+                  - *caption_en
+                  - *caption_ta
+                  - *featured
+                  - *hidden
+
+      # ------------------------------------------------------------------
+      - name: reviews
+        label: Reviews
+        file: src/data/reviews.json
+        format: json
+        fields:
+          - name: reviews
+            label: Reviews
+            label_singular: review
+            widget: list
+            summary: "{{fields.rating}}★ {{fields.name}} ({{fields.source}})"
+            hint: "Copy your best Google reviews here (with the customer's name as shown on Google). Drag to reorder; the first 3–6 look best."
+            fields:
+              - { name: name, label: Customer name, widget: string }
+              - { name: rating, label: Stars, widget: select, options: ["5", "4", "3", "2", "1"], default: "5" }
+              - { name: text_en, label: Review (English), widget: text }
+              - { name: text_ta, label: Review (Tamil, optional), widget: text, required: false }
+              - { name: source, label: Where it came from, widget: select, options: [Google, Instagram, WhatsApp, Facebook, In shop], default: Google }
+              - { name: link, label: Link to the review (optional), widget: string, required: false }
+              - { name: sample, label: Sample (placeholder) review, widget: boolean, default: false, required: false, hint: "Turn OFF for real reviews." }
+              - { name: hidden, label: Hide from website, widget: boolean, default: false, required: false }
+
+      # ------------------------------------------------------------------
+      - name: services
+        label: Services & prices
+        file: src/data/services.json
+        format: json
+        fields:
+          - name: services
+            label: Services
+            label_singular: service
+            widget: list
+            summary: "{{fields.name_en}} — from ₹{{fields.starting_price}}"
+            hint: "Drag to reorder. Leave the price empty to show “Ask for a quote”."
+            fields:
+              - { name: name_en, label: Name (English), widget: string }
+              - { name: name_ta, label: Name (Tamil), widget: string, required: false }
+              - { name: category, label: Category, widget: select, options: [Bridal, Blouse, Machine, Kids, Other], default: Bridal }
+              - { name: description_en, label: Description (English), widget: text, required: false }
+              - { name: description_ta, label: Description (Tamil), widget: text, required: false }
+              - { name: starting_price, label: Starting price (₹), widget: number, value_type: int, min: 0, required: false }
+              - { name: price_unit, label: Per, widget: select, options: [piece, metre, set, design], default: piece, required: false }
+              - { name: image, label: Photo for Instagram/Facebook Shop (optional), widget: image, required: false }
+              - { name: show, label: Show on website, widget: boolean, default: true, required: false }
+
+      # ------------------------------------------------------------------
+      - name: settings
+        label: Shop details & links
+        file: src/data/settings.json
+        format: json
+        fields:
+          - { name: logo, label: Logo, widget: image, required: false, hint: "PNG with transparent background or SVG. Leave empty to use the text logo." }
+          - { name: whatsapp, label: WhatsApp number (with 91), widget: string, pattern: ["^\\+?[0-9 ]{11,16}$", "Digits with country code, e.g. 919514588588"] }
+          - { name: phone_display, label: Phone (as shown), widget: string }
+          - { name: instagram, label: Instagram username, widget: string, required: false, hint: "Without @, e.g. paavaiembroidery" }
+          - { name: facebook_url, label: Facebook page link, widget: string, required: false }
+          - { name: youtube_url, label: YouTube channel link, widget: string, required: false }
+          - name: google_reviews_url
+            label: Google reviews link
+            widget: string
+            required: false
+            hint: "Google Maps → your shop → Reviews → Share → Copy link. Shows a “Read our reviews on Google” button."
+          - name: google_write_review_url
+            label: Google “Write a review” link
+            widget: string
+            required: false
+            hint: "Google Business Profile → Ask for reviews → Copy link (looks like https://g.page/r/…/review). Shows a “Write a review” button."
+          - name: google_maps_url
+            label: Google Maps link to the shop
+            widget: string
+            required: false
+            hint: "Google Maps → your shop → Share → Copy link. Used for “Get directions”."
+          - name: address
+            label: Address
+            widget: object
+            fields:
+              - { name: line1, label: Line 1, widget: string }
+              - { name: line2, label: Line 2 / area, widget: string, required: false }
+              - { name: city, label: City, widget: string }
+              - { name: state, label: State, widget: string, default: Tamil Nadu }
+              - { name: pin, label: PIN code, widget: string }
+          - { name: show_map, label: Show address and map, widget: boolean, hint: "Turn on once the address above is real." }
+          - { name: map_query, label: Map search text, widget: string, hint: "What to search on Google Maps for the embedded map, e.g. “Paavai Embroidery, Salem”." }
+          - { name: hours_en, label: Opening hours (English), widget: string }
+          - { name: hours_ta, label: Opening hours (Tamil), widget: string }
+          - { name: opening_hours, label: Opening hours for Google, widget: string, hint: "Format: Mo-Sa 09:30-20:30" }

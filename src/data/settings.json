@@ -1,0 +1,23 @@
+{
+  "logo": "",
+  "whatsapp": "919514588588",
+  "phone_display": "+91 95145 88588",
+  "instagram": "paavaiembroidery",
+  "facebook_url": "",
+  "youtube_url": "",
+  "google_reviews_url": "",
+  "google_write_review_url": "",
+  "google_maps_url": "",
+  "address": {
+    "line1": "Shop address line 1",
+    "line2": "Area",
+    "city": "City",
+    "state": "Tamil Nadu",
+    "pin": "600000"
+  },
+  "show_map": false,
+  "map_query": "Paavai Embroidery",
+  "hours_en": "Mon – Sat: 9:30 AM – 8:30 PM · Sunday closed",
+  "hours_ta": "திங்கள் – சனி: காலை 9:30 – இரவு 8:30 · ஞாயிறு விடுமுறை",
+  "opening_hours": "Mo-Sa 09:30-20:30"
+}

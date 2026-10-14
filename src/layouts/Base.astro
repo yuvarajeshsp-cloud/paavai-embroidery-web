@@ -4,7 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import WhatsAppFloat from '../components/WhatsAppFloat.astro';
-import { site } from '../config/site';
+import { site, socialLinks } from '../config/site';
 import { localePath, type Lang } from '../i18n/strings';
 
 interface Props {
@@ -30,7 +30,7 @@ const localBusiness = {
   url: site.url,
   telephone: site.phoneDisplay.replace(/\s/g, ''),
   openingHours: site.openingHours,
-  sameAs: [`https://instagram.com/${site.instagram}`],
+  sameAs: socialLinks.map((l) => l.url),
   ...(site.showMap ? {
     address: {
       '@type': 'PostalAddress',

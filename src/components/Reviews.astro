@@ -1,35 +1,82 @@
 ---
-// Reviews come from src/data/reviews.json. Remove "sample": true (or the
-// whole entry) once real reviews replace the placeholders.
-import reviews from '../data/reviews.json';
+// Reviews are edited in the admin page (/admin → Reviews), which saves
+// src/data/reviews.json. Turn off "Sample" on real reviews.
+import data from '../data/reviews.json';
+import { site } from '../config/site';
 import { t, type Lang } from '../i18n/strings';
 
 interface Props {
   lang: Lang;
 }
 
+type Review = {
+  name: string;
+  rating: number | string;
+  text_en: string;
+  text_ta?: string;
+  source?: string;
+  link?: string;
+  sample?: boolean;
+  hidden?: boolean;
+};
+
 const { lang } = Astro.props;
 const s = t(lang);
+const reviews = (data.reviews as Review[]).filter((r) => !r.hidden && r.text_en);
+const hasLinks = site.googleReviewsUrl || site.googleWriteReviewUrl;
 ---
 
 {
-  reviews.length > 0 && (
+  (reviews.length > 0 || hasLinks) && (
     <section class="section section--tint">
       <div class="container">
         <h2 class="center">{s.reviewsTitle}</h2>
-        <div class="grid grid--3">
-          {reviews.map((r) => (
-            <figure class="card review">
-              <div class="review__stars" aria-label={`${r.rating} / 5`}>
-                {'★'.repeat(r.rating)}
-                {'☆'.repeat(5 - r.rating)}
-              </div>
-              <blockquote>{lang === 'ta' ? r.text_ta : r.text_en}</blockquote>
-              <figcaption>— {r.name}</figcaption>
-              {r.sample && <p class="review__sample">{s.sampleReview}</p>}
-            </figure>
-          ))}
-        </div>
+        {reviews.length > 0 && (
+          <div class="grid grid--3">
+            {reviews.map((r) => {
+              const rating = Math.max(1, Math.min(5, Number(r.rating) || 5));
+              return (
+                <figure class="card review">
+                  <div class="review__stars" aria-label={`${rating} / 5`}>
+                    {'★'.repeat(rating)}
+                    {'☆'.repeat(5 - rating)}
+                  </div>
+                  <blockquote>{(lang === 'ta' && r.text_ta) || r.text_en}</blockquote>
+                  <figcaption>
+                    — {r.name}
+                    {r.source && (
+                      <span class="review__source">
+                        {' · '}
+                        {r.link ? (
+                          <a href={r.link} target="_blank" rel="noopener">
+                            {r.source}
+                          </a>
+                        ) : (
+                          r.source
+                        )}
+                      </span>
+                    )}
+                  </figcaption>
+                  {r.sample && <p class="review__sample">{s.sampleReview}</p>}
+                </figure>
+              );
+            })}
+          </div>
+        )}
+        {hasLinks && (
+          <div class="btn-row review__links">
+            {site.googleReviewsUrl && (
+              <a class="btn btn--ghost" href={site.googleReviewsUrl} target="_blank" rel="noopener">
+                {s.googleReviews}
+              </a>
+            )}
+            {site.googleWriteReviewUrl && (
+              <a class="btn btn--primary" href={site.googleWriteReviewUrl} target="_blank" rel="noopener">
+                {s.writeReview}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )
@@ -52,6 +99,9 @@ const s = t(lang);
     font-weight: 600;
     color: var(--ink-soft);
   }
+  .review__source {
+    font-weight: 400;
+  }
   .review__sample {
     margin: 10px 0 0;
     font-size: 0.8rem;
@@ -60,5 +110,9 @@ const s = t(lang);
     border-radius: 6px;
     padding: 2px 8px;
     display: inline-block;
+  }
+  .review__links {
+    justify-content: center;
+    margin-top: 28px;
   }
 </style>

@@ -1,16 +1,19 @@
 # Paavai Embroidery website: handover
 
-Last updated: 13 Oct 2026
+Last updated: 14 Oct 2026
 
 ## 1. Where everything is
 
 | What | Where |
 | --- | --- |
 | Website code | https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web (branch `main`) |
-| Shop Manager database change | https://github.com/yuvarajeshsp-cloud/embroidery-shop-manager, branch `claude/sharp-ritchie-uz9afj`, file `supabase/migrations/20261013000000_website_services_and_leads.sql` (**not merged and not applied yet**) |
+| Admin page (photos, videos, reviews, prices, links) | https://paavaiembroidery.com/admin (after step 4) |
+| Enquiries | Netlify → your site → **Forms** → `enquiry` (plus e-mail alerts) |
 | Domain | paavaiembroidery.com (not connected yet) |
 | Hosting | Netlify (site not created yet) |
-| Meta setup guide | `docs/META_SETUP.md` in the website repo |
+| Meta setup guide | `docs/META_SETUP.md` |
+
+The website does **not** depend on Shop Manager (the separate shop/order app).
 
 ## 2. Status
 
@@ -18,11 +21,11 @@ Last updated: 13 Oct 2026
 - Website built with Astro: Home, Gallery, Services & prices, About, Contact, Privacy, in English (`/…`) and Tamil (`/ta/…`).
 - Colours #d3d3ff / #9f9fff, with deep indigo for text.
 - WhatsApp +91 95145 88588 on every page. Messages are pre-filled and say where the visitor came from.
-- Enquiry form: saves to Shop Manager, then opens WhatsApp.
-- Meta Pixel + Conversions API, cookie banner, Instagram feed, Shop catalog at `/catalog.xml`, short links `/ig`, `/ig-story`, `/ta/ig`.
-- All of these are switched off until their keys are added.
+- **Admin page** (`/admin`): gallery (photos, uploaded videos, YouTube links, Instagram post/reel links), reviews, services & prices, logo, phone, Instagram/Facebook/YouTube, Google reviews and "Write a review" links, Google Maps link, address, hours.
+- Enquiry form: saved by Netlify Forms, then opens WhatsApp.
+- Meta Pixel + Conversions API, cookie banner, Instagram feed, Shop catalog at `/catalog.xml`, short links `/ig`, `/ig-story`, `/ta/ig`. Switched off until their keys are added.
 
-**Still placeholders**: address (map hidden), Instagram handle, logo, gallery photos, reviews (marked "sample"), and prices (sample list until Shop Manager is connected).
+**Still placeholders** (all editable in `/admin`): address (map hidden), Instagram handle, logo, gallery photos, reviews (marked "sample"), prices (sample list), Google links.
 
 ## 3. Work on your computer
 
@@ -35,12 +38,10 @@ npm install
 npm run dev        # open http://localhost:4321 (live preview as you edit)
 ```
 
-- `npm run build`: makes the final site in `dist/` and checks for errors.
-- `npx astro check`: type check.
-- To test the enquiry form locally: `npm install -g netlify-cli`, then `netlify dev`.
-- Once `npm install` has run, the site builds without internet. Fonts, the Instagram feed and live prices need internet, and are skipped or fall back if offline.
+- Admin page locally: in a second terminal run `npx decap-server`, then open http://localhost:4321/admin/ and click **Login** (no password; it edits the files on your computer, commit and push them afterwards).
+- `npm run build`: makes the final site in `dist/` and checks for errors. `npx astro check`: type check.
 
-Saving your changes:
+Saving code changes:
 
 ```sh
 git add -A
@@ -54,41 +55,42 @@ git push           # Netlify updates the live site automatically (after step 4)
 2. Log in with GitHub, allow access to the repo, then click **Save & Deploy**. The settings come from `netlify.toml`.
 3. **Site configuration → Change site name** → `paavai-embroidery`.
 4. **Domain management → Add domain** → `paavaiembroidery.com`, then copy the DNS records it shows into your domain provider's account. HTTPS turns on automatically.
-5. **Build hooks**: create a hook and call it once a day (for example from https://cron-job.org) so prices and the Instagram feed stay fresh.
+5. **Forms**: Netlify → **Forms** → *Enable form detection*, then redeploy once. Under **Forms → Form notifications** add an e-mail notification for `enquiry`.
+6. **Admin login** (lets you log in to `/admin` with GitHub):
+   1. GitHub → Settings → Developer settings → **OAuth Apps** → *New OAuth App*.
+      Homepage URL `https://paavaiembroidery.com`, Authorization callback URL `https://api.netlify.com/auth/done`. Create it, then *Generate a new client secret*.
+   2. Netlify → **Site configuration → Access & security → OAuth** → *Install provider* → GitHub → paste the Client ID and secret.
+   3. Open https://paavaiembroidery.com/admin and log in with GitHub. Anyone who should edit the site needs a GitHub account added as a collaborator on the repo.
+7. Optional, for the Instagram feed only: **Build hooks** → create a hook and call it once a day (for example from https://cron-job.org) so the feed stays fresh.
 
-## 5. Connect Shop Manager (live prices and saved enquiries)
+## 5. Using the admin page
 
-1. **Merge** the Shop Manager branch `claude/sharp-ritchie-uz9afj` into your main branch (open a pull request on GitHub).
-2. **Apply the database change**: Supabase dashboard → **SQL Editor** → paste the contents of `20261013000000_website_services_and_leads.sql` → **Run**. (Or `supabase db push` if you use the Supabase CLI.) It only adds two tables and one function; existing data is not touched.
-3. Find your shop's ids (SQL Editor): `select id, slug, name from organizations;`
-4. In Netlify → **Site configuration → Environment variables**, add:
+Open `/admin` on your phone or computer → **Website**:
 
-| Name | Value | Where to find it |
-| --- | --- | --- |
-| `PUBLIC_SUPABASE_URL` | `https://xxxx.supabase.co` | Supabase → Project Settings → API |
-| `SUPABASE_ANON_KEY` | anon / publishable key | same page |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role / secret key | same page. **Secret**: only paste it into Netlify |
-| `SHOP_ORG_SLUG` | `slug` from step 3 | |
-| `SHOP_ORG_ID` | `id` from step 3 | |
+| Section | What you can do |
+| --- | --- |
+| Gallery – photos & videos | **Add item** → *Photo* (upload from phone), *Video (upload)* (short MP4, under 20 MB, add a cover photo), *YouTube video* (paste link), *Instagram post / reel* (paste link + cover photo). Pick a category, add captions, tick **Show on home page** for the "Recent work" section. Drag to reorder. |
+| Reviews | Copy your Google reviews in (name, stars, text). Turn **Sample** off on real ones. |
+| Services & prices | Name, Tamil name, price (empty = "Ask for a quote"), photo for the Instagram Shop. |
+| Shop details & links | Logo, phone, Instagram username, Facebook/YouTube links, Google reviews link, Google "Write a review" link, Google Maps link, address (+ **Show address and map**), hours. |
 
-5. **Deploys → Trigger deploy**.
-6. Add services: until the Shop Manager app has a screen for this, insert rows in Supabase → Table editor → `website_services` (pick your organization, fill `name_en`, `name_ta`, `starting_price`, `category`, set `is_published` = true), then redeploy.
-7. Test: send an enquiry on the live site, then check Table editor → `website_leads`.
+Click **Publish** (top right). The live site updates in about a minute.
 
-Note: as soon as these variables are set, the sample prices disappear. If no service is published, the site shows only "Ask for a quote".
+Where to find the Google links:
+- **Write a review**: Google Business Profile (search your shop name on Google while logged in) → *Ask for reviews* → copy the link.
+- **Reviews / Maps link**: Google Maps → your shop → *Share* → *Copy link*.
 
-## 6. Everyday edits
+Photos straight from a phone are fine: Netlify resizes them and serves WebP automatically. Long videos make the site repo heavy, so put those on YouTube/Instagram and add a link instead.
+
+## 6. Edits that are still in code
 
 | Change | File |
 | --- | --- |
-| Phone, hours, address, Instagram handle (set `showMap: true` after adding the address) | `src/config/site.ts` |
-| Any text, English and Tamil | `src/i18n/strings.ts` |
-| Gallery photos | copy JPG/WebP (about 1200px wide) to `public/images/gallery/`, add a line in `src/data/gallery.ts`, delete the `placeholder-*.svg` lines |
-| Logo | save as `public/images/logo.svg` or `.png`, set `LOGO_SRC` in `src/components/Logo.astro` |
-| Reviews | `src/data/reviews.json` (remove `"sample": true` for real ones) |
+| Any page text, English and Tamil | `src/i18n/strings.ts` |
 | Colours and fonts | `src/styles/global.css` (top of the file) |
 | Instagram short links | `public/_redirects` |
 | Privacy text | `src/views/PrivacyView.astro` |
+| Fields shown in the admin page | `public/admin/config.yml` |
 
 Each page lives once in `src/views/*View.astro`. The files in `src/pages/` (English) and `src/pages/ta/` (Tamil) just show that view in one language.
 
@@ -98,17 +100,10 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 
 ## 8. How it works (for a developer)
 
-- `src/lib/services.ts`: at build time, calls the Supabase RPC `public_website_services(org_slug)`. If it isn't configured, it uses `src/data/services.fallback.json`. If it is configured but fails, the build fails on purpose so Netlify keeps the last good version.
-- `src/lib/instagram.ts`: Instagram Graph API at build time. If there's no token, the section is hidden.
+- Content lives in `src/data/*.json` and is read at build time: `src/config/site.ts` (settings), `src/lib/gallery.ts`, `src/lib/services.ts`, `src/components/Reviews.astro`.
+- `public/admin/` is Decap CMS (GitHub backend through Netlify's OAuth). Uploads go to `public/images/uploads/` and `public/videos/`.
+- `sizedImage()` in `src/lib/gallery.ts` serves uploaded photos through the Netlify Image CDN (`/.netlify/images`) on Netlify builds.
+- YouTube tiles load `youtube-nocookie.com` only when tapped.
 - `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture (kept 30 days), WhatsApp click tracking (`a[data-wa]`).
-- `netlify/functions/enquiry.mjs`: checks the input, filters spam (hidden field and minimum fill time), inserts into `website_leads` with the service-role key, and sends a CAPI `Lead` event (only with consent) using the same `event_id` as the browser so Meta counts it once.
-- `netlify/functions/meta-event.mjs`: server copy of `Contact` / `ViewContent`.
-- `netlify/lib/meta.mjs`: Conversions API helper (phone hashed as SHA-256 with country code 91).
-
-## 9. Next steps
-
-1. Shop Manager app: screens to edit website services and to view and convert website leads.
-2. Shop Manager: send a Meta `Purchase` event when a lead becomes a paid order (the attribution columns are already stored on each lead).
-3. Real photos, logo, address, Instagram handle and reviews.
-4. Have a native speaker review the Tamil text in `src/i18n/strings.ts`.
-5. Translate the Privacy page into Tamil.
+- Enquiry form (`src/components/EnquiryForm.astro`) posts to Netlify Forms (`form-name=enquiry`, honeypot `website`). With consent, it also calls `netlify/functions/enquiry.mjs`, which sends a CAPI `Lead` with the same `event_id` as the browser.
+- `netlify/functions/meta-event.mjs`: server copy of `Contact` / `ViewContent`. `netlify/lib/meta.mjs`: Conversions API helper.

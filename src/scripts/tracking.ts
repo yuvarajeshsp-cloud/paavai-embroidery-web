@@ -4,7 +4,7 @@
 // - Every event gets an event_id; the same id is sent from the browser (Pixel)
 //   and the server (Conversions API) so Meta counts it once.
 // - UTM tags / fbclid from Instagram links are remembered for 30 days and
-//   attached to enquiries, so Shop Manager shows where each lead came from.
+//   attached to enquiries, so each one shows where the visitor came from.
 
 declare global {
   interface Window {

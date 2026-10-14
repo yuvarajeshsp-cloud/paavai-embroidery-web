@@ -30,13 +30,11 @@ What gets sent (only after the visitor taps **Accept** on the cookie banner):
 
 In Ads Manager, optimise campaigns for **Leads** using this Pixel.
 
-### Next step: "Purchase" when a lead becomes an order
+### Later: "Purchase" events
 
-Every lead in Shop Manager keeps its `event_id`, `fbp`, `fbc` and `fbclid`.
-When staff convert a lead into a paid order, Shop Manager can send a
-**Purchase** event (with the order value) to the Conversions API, so
-Instagram ads optimise for paying customers, not just enquiries. This is
-planned as a Shop Manager feature.
+To let Instagram ads optimise for paying customers (not just enquiries),
+Meta can be told about sales: Events Manager → *Offline events* / upload a
+CSV of phone numbers and order values every week or so.
 
 ## 3. Instagram feed on the website
 
@@ -57,7 +55,7 @@ The site publishes a product feed at **https://paavaiembroidery.com/catalog.xml*
 3. Connect the catalog to the Pixel (*Catalog → Settings → Event sources*).
 4. To tag products in Instagram posts, set up the shop under *Commerce Manager → Shops* (Meta reviews eligibility).
 
-Each product needs a real photo (JPG or PNG, at least 500×500). Set `image_url` on each service in Shop Manager. Until then, items use a gallery photo of the same category, or the default image.
+Each product needs a real photo (JPG or PNG, at least 500×500). Add a photo to each service in the admin page (`/admin` → Services & prices). Until then, items use a gallery photo of the same category, or the default image.
 
 ## 5. Tagged links
 
@@ -65,5 +63,5 @@ Each product needs a real photo (JPG or PNG, at least 500×500). Set `image_url`
 - Story link sticker: `paavaiembroidery.com/ig-story`
 - Ads (Ads Manager → *URL parameters*): `utm_source=instagram&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`
 
-The source is saved with every lead in Shop Manager and appended to the
+The source is saved with every enquiry (Netlify → Forms, field `came_from`) and appended to the
 WhatsApp message (e.g. "(via Instagram ad – Diwali bridal)").

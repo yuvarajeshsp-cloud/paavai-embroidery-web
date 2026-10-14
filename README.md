@@ -4,8 +4,8 @@ Public website for **paavaiembroidery.com**: English + Tamil, built with
 [Astro](https://astro.build) and hosted on Netlify.
 
 - **Pages:** Home, Gallery (+ live Instagram feed), Services & prices, About, Contact, Privacy — each at `/…` (English) and `/ta/…` (Tamil).
-- **Enquiries:** the contact form saves a lead into **Shop Manager** (`website_leads`) and then opens WhatsApp with the message pre-filled, including where the visitor came from (e.g. *via Instagram ad – diwali*).
-- **Prices:** read live from Shop Manager (`website_services`, published rows) every time the site builds.
+- **Admin page** at `/admin` ([Decap CMS](https://decapcms.org)): upload photos and videos, add YouTube/Instagram links, edit reviews, prices, logo, Instagram/Google/Facebook links, address and hours. Each save is a commit; Netlify rebuilds in about a minute.
+- **Enquiries:** the contact form is saved by **Netlify Forms** (e-mail alerts) and then opens WhatsApp with the message pre-filled, including where the visitor came from (e.g. *via Instagram ad – diwali*).
 - **Meta:** Pixel + Conversions API (deduplicated), Instagram feed, Instagram/Facebook Shop catalog feed at `/catalog.xml`, UTM attribution, cookie consent. See [docs/META_SETUP.md](docs/META_SETUP.md).
 
 **New here? Start with [docs/HANDOVER.md](docs/HANDOVER.md).**
@@ -14,45 +14,39 @@ Public website for **paavaiembroidery.com**: English + Tamil, built with
 
 ```sh
 npm install
-cp .env.example .env   # optional — without it the site uses sample prices
 npm run dev            # http://localhost:4321
+npx decap-server       # (second terminal) then open http://localhost:4321/admin/ — edits files locally, no login
 npm run build          # production build into dist/
 ```
 
-The enquiry form posts to a Netlify Function, so to test it locally use
-`npx netlify dev` instead of `npm run dev`.
+Netlify Forms only work on Netlify itself; locally the form still opens WhatsApp.
 
 ## Where to change things
 
+Day-to-day content is edited in the admin page (`/admin`), which writes these files:
+
 | What | File |
 | --- | --- |
-| Phone, hours, address, Instagram handle, map | `src/config/site.ts` |
-| All page text (English + Tamil) | `src/i18n/strings.ts` |
-| Gallery photos | put images in `public/images/gallery/`, list them in `src/data/gallery.ts` |
-| Logo | save as `public/images/logo.svg` (or .png) and set `LOGO_SRC` in `src/components/Logo.astro` |
-| Reviews | `src/data/reviews.json` (remove `"sample": true` on real ones) |
-| Prices | in Shop Manager → website services (the sample list in `src/data/services.fallback.json` is only used until Supabase is connected) |
-| Colors / fonts | `src/styles/global.css` |
+| Gallery: photos, uploaded videos, YouTube and Instagram links | `src/data/gallery.json` (uploads in `public/images/uploads/`, `public/videos/`) |
+| Reviews | `src/data/reviews.json` |
+| Services & prices | `src/data/services.json` |
+| Logo, phone, Instagram/Facebook/YouTube, Google review & Maps links, address, hours | `src/data/settings.json` |
+| Admin page fields | `public/admin/config.yml` |
 
-Still placeholders: shop address (`showMap: false` hides the map until it's filled in), Instagram handle, photos, logo, reviews.
+In code only:
+
+| What | File |
+| --- | --- |
+| All page text (English + Tamil) | `src/i18n/strings.ts` |
+| Colors / fonts | `src/styles/global.css` |
 
 ## Deploy on Netlify
 
 1. Netlify → *Add new site* → *Import from GitHub* → pick this repo. Build settings come from `netlify.toml`.
-2. *Site configuration → Environment variables*: add the values listed in `.env.example`.
-3. *Domain management*: add `paavaiembroidery.com` and follow Netlify's DNS steps.
-4. *Build hooks*: create one and call it daily (e.g. from a free cron service, or a Netlify scheduled function) so prices and the Instagram feed stay fresh. Changing prices in Shop Manager shows up on the next build.
-
-## Shop Manager connection
-
-Needs the migration `20261013000000_website_services_and_leads.sql` from the
-Embroidery-Shop-Manager repo applied to Supabase. It adds:
-
-- `website_services` — the public price list (only `is_published` rows are exposed, through the `public_website_services(org_slug)` function).
-- `website_leads` — enquiries from the form, with UTM / Meta attribution. Only the server function writes them, using the service-role key.
-
-Environment variables: `PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SHOP_ORG_SLUG` (build-time, read prices);
-`SUPABASE_SERVICE_ROLE_KEY` and `SHOP_ORG_ID` (server-only, save leads). Never put the service-role key in a `PUBLIC_` variable.
+2. *Domain management*: add `paavaiembroidery.com` and follow Netlify's DNS steps.
+3. Admin login: create a GitHub OAuth app and add it under Netlify → *Site configuration → Access & security → OAuth* (steps in [docs/HANDOVER.md](docs/HANDOVER.md)).
+4. *Forms*: enable form detection and add an e-mail notification for the `enquiry` form.
+5. Optional: *Environment variables* from `.env.example` for Meta and the Instagram feed.
 
 ## Instagram short links
 

@@ -13,7 +13,6 @@ const { lang } = Astro.props;
 const s = t(lang);
 const services = await getServices();
 const a = site.address;
-const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site.mapQuery)}`;
 ---
 
 <Base lang={lang} title={s.contactTitle} description={s.contactIntro} path="/contact">
@@ -29,11 +28,21 @@ const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComp
           <h2 class="h3">{s.phoneLabel}</h2>
           <p>
             <a href={whatsappLink(s.waGreeting)} data-wa="contact-page" rel="noopener">{site.phoneDisplay}</a><br />
-            <a href={`tel:+${site.whatsapp}`}>{lang === 'ta' ? 'அழைக்க' : 'Call'}</a> ·
-            <a href={instagramLink} rel="noopener">@{site.instagram}</a>
+            <a href={`tel:+${site.whatsapp}`}>{lang === 'ta' ? 'அழைக்க' : 'Call'}</a>
+            {instagramLink && (
+              <>
+                {' · '}
+                <a href={instagramLink} target="_blank" rel="noopener">@{site.instagram}</a>
+              </>
+            )}
           </p>
           <h2 class="h3">{s.hoursLabel}</h2>
           <p>{site.hours[lang]}</p>
+          {site.googleWriteReviewUrl && (
+            <p>
+              <a href={site.googleWriteReviewUrl} target="_blank" rel="noopener">★ {s.writeReview}</a>
+            </p>
+          )}
           {site.showMap && (
             <>
               <h2 class="h3">{s.addressLabel}</h2>
@@ -42,7 +51,7 @@ const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComp
                 {a.line2}, {a.city}<br />
                 {a.state} {a.pin}
               </address>
-              <a class="btn btn--ghost" href={mapsUrl} rel="noopener">{s.directions}</a>
+              <a class="btn btn--ghost" href={site.mapsUrl} target="_blank" rel="noopener">{s.directions}</a>
             </>
           )}
         </div>

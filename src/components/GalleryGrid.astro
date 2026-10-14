@@ -1,5 +1,5 @@
 ---
-import { categoryLabels, type GalleryItem } from '../data/gallery';
+import { categoryLabel, sizedImage, youtubeId, type GalleryItem } from '../lib/gallery';
 import { t, type Lang } from '../i18n/strings';
 
 interface Props {
@@ -11,17 +11,18 @@ interface Props {
 const { lang, items, filters = false } = Astro.props;
 const s = t(lang);
 const categories = [...new Set(items.map((i) => i.category))];
+const caption = (i: GalleryItem) => (lang === 'ta' && i.caption_ta) || i.caption_en || categoryLabel(i.category, lang);
 ---
 
 {
-  filters && (
+  filters && categories.length > 1 && (
     <div class="filters" role="group" aria-label="Filter">
       <button type="button" class="filter" aria-pressed="true" data-filter="all">
         {s.all}
       </button>
       {categories.map((c) => (
         <button type="button" class="filter" aria-pressed="false" data-filter={c}>
-          {categoryLabels[c][lang]}
+          {categoryLabel(c, lang)}
         </button>
       ))}
     </div>
@@ -30,19 +31,45 @@ const categories = [...new Set(items.map((i) => i.category))];
 
 <ul class="gallery grid grid--4">
   {
-    items.map((item) => (
-      <li class="gallery__item" data-category={item.category}>
-        <img
-          src={item.src}
-          alt={lang === 'ta' ? item.alt_ta : item.alt_en}
-          loading="lazy"
-          decoding="async"
-          width="600"
-          height="600"
-        />
-        <span class="tag gallery__tag">{categoryLabels[item.category][lang]}</span>
-      </li>
-    ))
+    items.map((item) => {
+      const yt = item.type === 'youtube' ? youtubeId(item.url) : null;
+      return (
+        <li class="gallery__item" data-category={item.category}>
+          {item.type === 'photo' && (
+            <img src={sizedImage(item.image, 600)} alt={caption(item)} loading="lazy" decoding="async" width="600" height="600" />
+          )}
+          {item.type === 'video' && (
+            <video
+              src={item.video}
+              poster={item.poster ? sizedImage(item.poster, 600) : undefined}
+              preload={item.poster ? 'none' : 'metadata'}
+              controls
+              muted
+              playsinline
+              loop
+              aria-label={caption(item)}
+            />
+          )}
+          {item.type === 'youtube' && yt && (
+            <button type="button" class="gallery__yt" data-yt={yt} aria-label={`${s.playVideo}: ${caption(item)}`}>
+              <img src={`https://i.ytimg.com/vi/${yt}/hqdefault.jpg`} alt="" loading="lazy" decoding="async" width="480" height="360" />
+              <span class="gallery__play" aria-hidden="true">▶</span>
+            </button>
+          )}
+          {item.type === 'instagram' && (
+            <a class="gallery__ig" href={item.url} target="_blank" rel="noopener">
+              {item.image ? (
+                <img src={sizedImage(item.image, 600)} alt={caption(item)} loading="lazy" decoding="async" width="600" height="600" />
+              ) : (
+                <span class="gallery__ig-text">{caption(item)}</span>
+              )}
+              <span class="gallery__badge">Instagram ↗</span>
+            </a>
+          )}
+          <span class="tag gallery__tag">{categoryLabel(item.category, lang)}</span>
+        </li>
+      );
+    })
   }
 </ul>
 
@@ -62,10 +89,17 @@ const categories = [...new Set(items.map((i) => i.category))];
   .gallery__item[hidden] {
     display: none;
   }
-  .gallery__item img {
+  .gallery__item img,
+  .gallery__item video,
+  .gallery__item iframe {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border: 0;
+    background: var(--ink);
+  }
+  .gallery__item img {
     transition: transform 0.3s;
   }
   .gallery__item:hover img {
@@ -74,8 +108,55 @@ const categories = [...new Set(items.map((i) => i.category))];
   .gallery__tag {
     position: absolute;
     left: 10px;
-    bottom: 10px;
+    top: 10px;
     background: rgb(255 255 255 / 0.9);
+    pointer-events: none;
+  }
+  .gallery__yt,
+  .gallery__ig {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background: var(--ink);
+    color: inherit;
+  }
+  .gallery__play {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    translate: -50% -50%;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+    color: #fff;
+    background: rgb(26 26 74 / 0.75);
+  }
+  .gallery__ig-text {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 24px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--ink);
+    background: linear-gradient(135deg, var(--lavender), var(--periwinkle));
+  }
+  .gallery__badge {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgb(26 26 74 / 0.75);
   }
   .filters {
     display: flex;
@@ -112,6 +193,19 @@ const categories = [...new Set(items.map((i) => i.category))];
       list.querySelectorAll<HTMLElement>('[data-category]').forEach((li) => {
         li.hidden = f !== 'all' && li.dataset.category !== f;
       });
+    });
+  });
+
+  // YouTube loads only when tapped (privacy-enhanced mode), so the page stays
+  // fast and no YouTube cookies are set for visitors who never press play.
+  document.querySelectorAll<HTMLButtonElement>('[data-yt]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const frame = document.createElement('iframe');
+      frame.src = `https://www.youtube-nocookie.com/embed/${btn.dataset.yt}?autoplay=1&rel=0`;
+      frame.title = btn.getAttribute('aria-label') || 'Video';
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      btn.replaceWith(frame);
     });
   });
 </script>

@@ -1,6 +1,6 @@
 ---
 import Logo from './Logo.astro';
-import { site, instagramLink, whatsappLink } from '../config/site';
+import { site, socialLinks, whatsappLink } from '../config/site';
 import { localePath, t, type Lang } from '../i18n/strings';
 
 interface Props {
@@ -24,10 +24,25 @@ const s = t(lang);
     <div>
       <h3>{s.phoneLabel}</h3>
       <p>
-        <a href={whatsappLink(s.waGreeting)} data-wa="footer" rel="noopener">{site.phoneDisplay}</a><br />
-        <a href={instagramLink} rel="noopener">@{site.instagram}</a>
+        <a href={whatsappLink(s.waGreeting)} data-wa="footer" rel="noopener">{site.phoneDisplay}</a>
       </p>
     </div>
+    {
+      socialLinks.length > 0 && (
+        <div>
+          <h3>{s.followLabel}</h3>
+          <ul class="footer__social">
+            {socialLinks.map((l) => (
+              <li>
+                <a href={l.url} target="_blank" rel="noopener">
+                  {l.name === 'Instagram' ? `Instagram @${site.instagram}` : l.name === 'Google' ? s.googleReviews : l.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
   </div>
   <div class="container footer__bottom">
     <span>© {new Date().getFullYear()} {site.name}. {s.footerRights}</span>
@@ -57,6 +72,13 @@ const s = t(lang);
     display: grid;
     gap: 28px;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .footer__social {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
   }
   .footer__tag {
     margin-top: 12px;

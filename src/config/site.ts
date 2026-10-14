@@ -1,5 +1,9 @@
-// Business details shown across the site. Edit here; every page picks it up.
-// Entries marked TODO are placeholders until the real details are known.
+// Business details shown across the site. They are edited in the admin page
+// (/admin → Shop details), which saves src/data/settings.json; only the name
+// and domain are fixed here.
+import settings from '../data/settings.json';
+
+const handle = settings.instagram.trim().replace(/^@/, '');
 
 export const site = {
   name: 'Paavai Embroidery',
@@ -7,34 +11,41 @@ export const site = {
   domain: 'paavaiembroidery.com',
   url: 'https://paavaiembroidery.com',
 
+  logo: settings.logo || null,
+
   // Digits only, with country code — used to build wa.me links.
-  whatsapp: '919514588588',
-  phoneDisplay: '+91 95145 88588',
+  whatsapp: settings.whatsapp.replace(/\D/g, ''),
+  phoneDisplay: settings.phone_display,
 
-  // TODO: real Instagram handle (without @).
-  instagram: 'paavaiembroidery',
+  instagram: handle,
+  facebookUrl: settings.facebook_url || null,
+  youtubeUrl: settings.youtube_url || null,
+  googleReviewsUrl: settings.google_reviews_url || null,
+  googleWriteReviewUrl: settings.google_write_review_url || null,
 
-  // TODO: real address. Set showMap to true once the address is filled in.
-  address: {
-    line1: 'Shop address line 1',
-    line2: 'Area',
-    city: 'City',
-    state: 'Tamil Nadu',
-    pin: '600000',
-  },
-  showMap: false,
-  // Google Maps search used for the embedded map and "Get directions".
-  mapQuery: 'Paavai Embroidery',
+  address: settings.address,
+  showMap: settings.show_map,
+  // Google Maps search used for the embedded map.
+  mapQuery: settings.map_query,
+  // "Get directions" link: the shop's own Google Maps link when set.
+  mapsUrl:
+    settings.google_maps_url ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.map_query)}`,
 
-  hours: {
-    en: 'Mon – Sat: 9:30 AM – 8:30 PM · Sunday closed',
-    ta: 'திங்கள் – சனி: காலை 9:30 – இரவு 8:30 · ஞாயிறு விடுமுறை',
-  },
+  hours: { en: settings.hours_en, ta: settings.hours_ta },
   // For structured data (schema.org openingHours).
-  openingHours: 'Mo-Sa 09:30-20:30',
-} as const;
+  openingHours: settings.opening_hours,
+};
 
 export const whatsappLink = (text?: string) =>
   `https://wa.me/${site.whatsapp}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 
-export const instagramLink = `https://instagram.com/${site.instagram}`;
+export const instagramLink = handle ? `https://instagram.com/${handle}` : null;
+
+// Every social profile that is filled in, for links and schema.org sameAs.
+export const socialLinks = [
+  instagramLink && { name: 'Instagram', url: instagramLink },
+  site.facebookUrl && { name: 'Facebook', url: site.facebookUrl },
+  site.youtubeUrl && { name: 'YouTube', url: site.youtubeUrl },
+  site.googleReviewsUrl && { name: 'Google', url: site.googleReviewsUrl },
+].filter(Boolean) as { name: string; url: string }[];

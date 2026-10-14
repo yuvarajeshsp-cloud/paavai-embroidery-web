@@ -1,45 +1,25 @@
-import fallback from '../data/services.fallback.json';
+// The price list is edited in the admin page (/admin → Services & prices),
+// which saves src/data/services.json. Order in the admin = order on the site.
+import data from '../data/services.json';
 
 export type Service = {
   category: string;
   name_en: string;
-  name_ta: string | null;
-  description_en: string | null;
-  description_ta: string | null;
-  starting_price: number | null;
-  price_unit: string | null;
-  image_url?: string | null;
-  sort_order: number;
+  name_ta?: string | null;
+  description_en?: string | null;
+  description_ta?: string | null;
+  starting_price?: number | null;
+  price_unit?: string | null;
+  image?: string | null;
+  show?: boolean;
 };
 
-let cache: Promise<Service[]> | undefined;
+const services = (data.services as Service[])
+  .filter((s) => s.show !== false && s.name_en)
+  .map((s) => ({ ...s, starting_price: s.starting_price == null || (s.starting_price as unknown) === '' ? null : Number(s.starting_price) }));
 
-// The price list comes live from Shop Manager (website_services, published
-// rows only) when the site is built. Until Supabase is configured, the sample
-// list is used so the site can be previewed. Once it is configured, a failed
-// fetch fails the build on purpose: Netlify then keeps the previous deploy
-// live instead of publishing sample prices.
-export function getServices(): Promise<Service[]> {
-  cache ??= load();
-  return cache;
-}
-
-async function load(): Promise<Service[]> {
-  const url = import.meta.env.PUBLIC_SUPABASE_URL;
-  const key = import.meta.env.SUPABASE_ANON_KEY;
-  const slug = import.meta.env.SHOP_ORG_SLUG;
-  if (!url || !key || !slug) {
-    console.warn('[services] Supabase not configured; using sample price list.');
-    return fallback as Service[];
-  }
-  const res = await fetch(`${url}/rest/v1/rpc/public_website_services`, {
-    method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ org_slug: slug }),
-  });
-  if (!res.ok) throw new Error(`[services] Could not load price list from Shop Manager: ${res.status} ${await res.text()}`);
-  const rows = (await res.json()) as Service[];
-  return rows.map((r) => ({ ...r, starting_price: r.starting_price == null ? null : Number(r.starting_price) }));
+export async function getServices(): Promise<Service[]> {
+  return services;
 }
 
 export const formatPrice = (n: number) =>

@@ -1,6 +1,5 @@
 ---
-// Text logo until the real logo file is added. To use your logo: save it as
-// public/images/logo.svg (or .png) and set LOGO_SRC below.
+// Text logo until a logo is uploaded in the admin page (/admin → Shop details).
 import { site } from '../config/site';
 import type { Lang } from '../i18n/strings';
 
@@ -8,7 +7,7 @@ interface Props {
   lang: Lang;
 }
 
-const LOGO_SRC: string | null = null; // e.g. '/images/logo.svg'
+const LOGO_SRC = site.logo;
 const { lang } = Astro.props;
 ---
 
