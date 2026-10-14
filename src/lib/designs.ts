@@ -4,6 +4,7 @@ import { content } from './content';
 import { localePath, type Lang } from '../i18n/strings';
 import { WORK_TYPES } from './work-types';
 import { priceLabel, type PriceType } from './price';
+import { parseBlouse3D, type Blouse3D } from './blouse3d';
 
 export { WORK_TYPES };
 
@@ -35,12 +36,19 @@ export type Design = {
   featured: boolean;
   available: boolean;
   created_at: string;
+  /** 3D mannequin preview, or null. */
+  blouse3d: Blouse3D | null;
 };
 
 const num = (v: unknown) => (v == null || v === '' ? null : Number(v));
 
 export const categories = (content.categories as Category[]).sort((a, b) => a.position - b.position);
-export const designs = (content.designs as Design[]).map((d) => ({ ...d, price: num(d.price), price_max: num(d.price_max) }));
+export const designs = (content.designs as Design[]).map((d) => ({
+  ...d,
+  price: num(d.price),
+  price_max: num(d.price_max),
+  blouse3d: parseBlouse3D(d.blouse3d),
+}));
 
 // Popularity over the last 60 days (views + 5 × ♡ + 10 × WhatsApp enquiries),
 // from the anonymous counters. The top designs get a "Popular" badge.

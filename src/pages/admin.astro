@@ -264,6 +264,26 @@ import '../styles/global.css';
   .adm__actions .btn { min-height: 42px; padding: 0.5em 1.2em; }
   .adm__img-field { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .adm__img-field img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--lavender); }
+  .adm__3d { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 14px; display: grid; gap: 12px; min-width: 0; }
+  .adm__3d legend { font-weight: 700; padding: 0 6px; }
+  .adm__3d .hint { margin: 0; }
+  .adm__3d-styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .adm__3d-styles input[type='color'] { width: 100%; height: 40px; padding: 2px; }
+  .adm__3d-stage {
+    height: 380px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; text-align: center;
+    background: radial-gradient(circle at 50% 38%, #fff 0%, var(--lavender-50) 60%, var(--lavender-100) 100%);
+  }
+  .adm__3d-stage > canvas { grid-area: 1 / 1; }
+  .adm__3d-views { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+  .adm__3d-views button { font: inherit; font-size: 0.9rem; border: 1px solid var(--border); background: var(--lavender-50); border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+  .adm__3d-part { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .adm__img-field .adm__3d-thumb {
+    width: 72px; height: 72px; object-fit: contain; border-radius: 8px;
+    background: repeating-conic-gradient(#e6e6f2 0% 25%, #fff 0% 50%) 50% / 14px 14px;
+  }
+  .adm__3d-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px 12px; }
+  .adm__3d-sliders label { font-weight: 400; font-size: 0.9rem; }
+  .adm__3d-sliders input { width: 100%; min-height: 0; padding: 0; }
   .adm__toast {
     position: fixed; left: 50%; bottom: 24px; translate: -50% 0; background: var(--ink); color: #fff; padding: 10px 18px;
     border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: calc(100vw - 32px); z-index: 10;

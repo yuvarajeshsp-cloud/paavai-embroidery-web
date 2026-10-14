@@ -57,6 +57,7 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
       />
       {isPopular(d.code) ? <span class="dcard__badge dcard__badge--pop">{s.popular}</span> : isNew(d) && <span class="dcard__badge">{s.isNew}</span>}
       {!d.available && <span class="dcard__badge dcard__badge--off">{s.unavailable}</span>}
+      {d.blouse3d && <span class="dcard__badge dcard__badge--3d" title={s.view3d}>3D</span>}
     </div>
     <div class="dcard__body">
       <span class="dcard__code">{d.code}</span>
@@ -114,6 +115,11 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
   }
   .dcard__badge--pop {
     background: #c2410c;
+  }
+  .dcard__badge--3d {
+    left: auto;
+    right: 8px;
+    background: var(--accent);
   }
   .dcard__badge--off {
     top: auto;

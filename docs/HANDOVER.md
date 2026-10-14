@@ -66,6 +66,8 @@ Open https://paavaifashions.com/admin on a phone or computer and sign in with yo
 
 Design photos are shrunk to 1600 px and get a small "Paavai Embroidery · PE-0001" watermark in the bottom-right corner when uploaded; the original is not stored, so keep your originals on your phone. A design without photos, or in a hidden category, is not shown on the website.
 
+**3D blouse view** (optional, in **Edit** on a design): choose the front neck, back neck, sleeve length and fabric colour, then upload up to four designs: **Front (right side)**, **Back**, **Right sleeve**, **Left sleeve**. Use PNG artwork with a **transparent background** (a JPG's white background shows on the blouse). Move each design with the **Size / Left ↔ right / Down ↕ up** sliders while watching the live 3D preview (drag it to turn; the preview turns to the part you are moving). "Left ↔ right" is as seen from outside: on the front, the wearer's right side is the left half of the panel. On save the images get the same small watermark and are stored in full quality (up to 2048 px). The website then shows a **View in 3D** button on that design (and a "3D" badge on its card): visitors can turn the mannequin, jump to front/back/sides and try other fabric colours.
+
 Changes are saved straight away but appear on the website only after **Publish website** (top right); it takes about a minute. The page shows when there are unpublished changes.
 
 Google links: **Write a review** — Google Business Profile → *Ask for reviews* → copy link. **Reviews / Maps** — Google Maps → your shop → *Share* → copy link.
@@ -100,5 +102,6 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 - `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture, WhatsApp click tracking.
 - `src/scripts/shortlist.ts`: ♡ buttons (`[data-heart]`), localStorage list, `AddToWishlist`. `/shortlist` builds itself from `/designs-index.json`.
 - `src/pages/catalog.xml.ts`: Meta product feed (designs with a price, id = design code).
+- 3D blouse: `website_designs.blouse3d` (jsonb, `supabase/20261017000000_website_blouse_3d.sql`), types and defaults in `src/lib/blouse3d.ts`. The viewer `src/scripts/blouse3d-viewer.ts` (three.js, ~150 KB gzipped) is loaded with `import()` only when "View in 3D" is opened (design page) or a 3D design is added in /admin. The mannequin and blouse are built in code: blouse panels carry UVs in real distances along the surface (so designs keep their proportions); each panel's texture is a canvas painted with the fabric colour and the design at its size/position; necklines are cut in the shader from a per-vertex distance (`aKeep`). Uploads go to `website-media/<org>/designs-3d/` as WebP (PNG fallback).
 - `src/views/CollectionView.astro`: client link page; `public/_redirects` serves it for every `/c/*`. Data from `view_collection(token)` (counts opens unless `?preview=1`).
 - `src/scripts/stats.ts`: anonymous counters via `track_design_event(slug, code, kind)`; table `website_design_stats`; admin reads `website_design_insights(since)`; the build gets 60-day scores in `popular`.

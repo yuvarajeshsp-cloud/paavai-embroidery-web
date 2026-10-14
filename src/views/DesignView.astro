@@ -15,6 +15,7 @@ import {
   type Design,
 } from '../lib/designs';
 import { site, whatsappLink } from '../config/site';
+import { FABRIC_COLORS } from '../lib/blouse3d';
 import { localePath, t, type Lang } from '../i18n/strings';
 
 interface Props {
@@ -31,6 +32,19 @@ const parent = categoryById(cat.parent_id);
 const name = designName(d, lang);
 const pageUrl = new URL(designUrl(lang, d.code), site.url).toString();
 const waText = `${s.waGreeting}\n${ds.wa(d.code, name, pageUrl)}`;
+
+// 3D mannequin view: design images through the image CDN, and the fabric
+// colours to try (the design's own colour first).
+const b3 = d.blouse3d && {
+  ...d.blouse3d,
+  parts: Object.fromEntries(Object.entries(d.blouse3d.parts).map(([k, p]) => [k, { ...p, url: sizedImage(p.url, 1600) }])),
+};
+const swatches = b3
+  ? [
+      { hex: b3.color, label: FABRIC_COLORS.find((c) => c.hex === b3.color)?.[lang] ?? b3.color },
+      ...FABRIC_COLORS.filter((c) => c.hex !== b3.color).map((c) => ({ hex: c.hex, label: c[lang] })),
+    ]
+  : [];
 
 // Same subcategory first, then the rest of the parent category, then newest.
 const similar = [...designsIn(cat.id), ...(parent ? designsIn(parent.id) : []), ...designs]
@@ -106,6 +120,16 @@ const product = {
             )
           }
           {d.video && <video class="design__video" src={d.video} controls playsinline preload="metadata" />}
+          {
+            b3 && (
+              <button type="button" class="btn btn--ghost btn--3d" data-open3d>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+                  <path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z" /><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10" />
+                </svg>
+                {ds.view3d}
+              </button>
+            )
+          }
         </div>
 
         <div class="design__info">
@@ -151,6 +175,36 @@ const product = {
   }
 
   <span hidden data-view-content={d.code} data-value={d.price_type !== 'ask' && d.price != null ? d.price : ''}></span>
+  {
+    b3 && (
+      <dialog class="b3d" aria-label={`${name} – ${ds.view3d}`} data-b3d={JSON.stringify(b3)} data-fail={ds.no3d}>
+        <div class="b3d__stage" data-stage>
+          <p class="b3d__status" data-status>{ds.loading3d}</p>
+        </div>
+        <div class="b3d__top">
+          <strong>{d.code}</strong>
+          <button type="button" class="b3d__close" data-close3d aria-label={ds.close}>✕</button>
+        </div>
+        <div class="b3d__bar">
+          <div class="b3d__views">
+            {(['front', 'back', 'right', 'left'] as const).map((v) => (
+              <button type="button" data-view={v}>{ds.views3d[v]}</button>
+            ))}
+          </div>
+          <div class="b3d__colors" role="group" aria-label={ds.fabric3d}>
+            <span>{ds.fabric3d}</span>
+            {swatches.map((c, i) => (
+              <button type="button" class="b3d__swatch" data-color={c.hex} style={`--c:${c.hex}`} title={c.label} aria-label={c.label} aria-pressed={i === 0 ? 'true' : 'false'} />
+            ))}
+            <label class="b3d__swatch b3d__swatch--custom" title="+">
+              <input type="color" value={b3.color} data-custom-color aria-label={ds.fabric3d} />
+            </label>
+          </div>
+          <p class="b3d__hint">{ds.hint3d}<br />{ds.note3d}</p>
+        </div>
+      </dialog>
+    )
+  }
   <dialog class="lightbox" aria-label={name}>
     <img alt="" />
     <button type="button" class="lightbox__close" aria-label={ds.close}>✕</button>
@@ -198,6 +252,42 @@ const product = {
     grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr));
   }
   .more { margin-top: 24px; }
+  .btn--3d { width: 100%; margin-top: 12px; gap: 8px; }
+  .btn--3d svg { flex: none; }
+  .b3d {
+    padding: 0; border: 0; width: min(100vw, 980px); height: min(100dvh, 860px); max-width: 100vw; max-height: 100dvh;
+    border-radius: var(--radius); overflow: hidden; color: var(--ink);
+    background: radial-gradient(circle at 50% 38%, #fff 0%, var(--lavender-50) 55%, var(--lavender-100) 100%);
+  }
+  @media (max-width: 640px) { .b3d { width: 100vw; height: 100dvh; border-radius: 0; } }
+  .b3d::backdrop { background: rgb(10 10 30 / 0.7); }
+  .b3d[open] { display: flex; flex-direction: column; }
+  .b3d__stage { position: relative; flex: 1; min-height: 0; cursor: grab; }
+  .b3d__stage:active { cursor: grabbing; }
+  .b3d__status { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; color: var(--ink-soft); }
+  .b3d__top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px 0 18px; pointer-events: none; }
+  .b3d__top strong { color: var(--accent); letter-spacing: 0.03em; }
+  .b3d__close {
+    pointer-events: auto; width: 44px; height: 44px; border: 0; border-radius: 50%; font-size: 1.3rem; cursor: pointer;
+    background: rgb(255 255 255 / 0.85); color: var(--ink); box-shadow: var(--shadow);
+  }
+  .b3d__bar { padding: 10px 16px 14px; display: grid; gap: 10px; justify-items: center; background: rgb(255 255 255 / 0.7); border-top: 1px solid var(--border); }
+  .b3d__views { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .b3d__views button {
+    min-height: 40px; padding: 4px 16px; border-radius: 999px; border: 1px solid var(--periwinkle); background: #fff;
+    color: var(--accent); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .b3d__views button:hover { background: var(--lavender); }
+  .b3d__colors { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  .b3d__colors > span { font-size: 0.9rem; color: var(--ink-soft); margin-right: 4px; }
+  .b3d__swatch {
+    width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid #fff; background: var(--c);
+    box-shadow: 0 0 0 1px var(--border); cursor: pointer; position: relative; overflow: hidden;
+  }
+  .b3d__swatch[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--accent); }
+  .b3d__swatch--custom { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+  .b3d__swatch--custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .b3d__hint { margin: 0; font-size: 0.82rem; color: var(--ink-soft); text-align: center; }
   .lightbox { padding: 0; border: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; }
   .lightbox::backdrop { background: rgb(10 10 30 / 0.92); }
   .lightbox img { width: 100%; height: 100%; object-fit: contain; }
@@ -256,6 +346,50 @@ const product = {
     if (e.key === 'ArrowRight') open(current + 1);
     if (e.key === 'ArrowLeft') open(current - 1);
   });
+
+  // 3D mannequin: three.js is loaded only when the visitor opens it, and the
+  // viewer is disposed on close to free the graphics memory on phones.
+  const b3d = document.querySelector<HTMLDialogElement>('.b3d');
+  if (b3d) {
+    const stage = b3d.querySelector<HTMLElement>('[data-stage]')!;
+    const status = b3d.querySelector<HTMLElement>('[data-status]')!;
+    const swatches = [...b3d.querySelectorAll<HTMLButtonElement>('[data-color]')];
+    const custom = b3d.querySelector<HTMLInputElement>('[data-custom-color]')!;
+    let viewer: import('../scripts/blouse3d-viewer').Viewer | null = null;
+    let color = swatches[0]?.dataset.color ?? '#8a1538';
+
+    const pickColor = (hex: string, btn?: HTMLElement) => {
+      color = hex;
+      swatches.forEach((s) => s.setAttribute('aria-pressed', String(s === btn)));
+      viewer?.setColor(hex);
+    };
+    swatches.forEach((s) => s.addEventListener('click', () => pickColor(s.dataset.color!, s)));
+    custom.addEventListener('input', () => pickColor(custom.value));
+
+    document.querySelector('[data-open3d]')?.addEventListener('click', async () => {
+      b3d.showModal();
+      if (viewer) return;
+      status.hidden = false;
+      try {
+        const { createViewer } = await import('../scripts/blouse3d-viewer');
+        if (!b3d.open || viewer) return;
+        viewer = createViewer(stage, { ...JSON.parse(b3d.dataset.b3d!), color }, { autoRotate: true });
+        await viewer.ready;
+        status.hidden = true;
+      } catch (err) {
+        console.error(err);
+        status.textContent = b3d.dataset.fail!;
+      }
+    });
+    b3d.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
+      b.addEventListener('click', () => viewer?.view(b.dataset.view as 'front')),
+    );
+    b3d.querySelector('[data-close3d]')!.addEventListener('click', () => b3d.close());
+    b3d.addEventListener('close', () => {
+      viewer?.dispose();
+      viewer = null;
+    });
+  }
 
   document.querySelector<HTMLButtonElement>('[data-share]')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget as HTMLButtonElement;
