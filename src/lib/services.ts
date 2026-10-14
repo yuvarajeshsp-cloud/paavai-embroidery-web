@@ -1,6 +1,6 @@
-// The price list is edited in the admin page (/admin → Services & prices),
-// which saves src/data/services.json. Order in the admin = order on the site.
-import data from '../data/services.json';
+// The price list is edited in the admin page (/admin → Services & prices).
+// Order in the admin = order on the site.
+import { content } from './content';
 
 export type Service = {
   category: string;
@@ -14,8 +14,8 @@ export type Service = {
   show?: boolean;
 };
 
-const services = (data.services as Service[])
-  .filter((s) => s.show !== false && s.name_en)
+const services = (content.services as Service[])
+  .filter((s) => s.name_en)
   .map((s) => ({ ...s, starting_price: s.starting_price == null || (s.starting_price as unknown) === '' ? null : Number(s.starting_price) }));
 
 export async function getServices(): Promise<Service[]> {

@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "dist"
 
+# Uploaded photos live in Supabase storage; let Netlify's image CDN resize them.
+[images]
+  remote_images = ["https://brjosrtzyjorncmjhqhg\\.supabase\\.co/storage/v1/object/public/website-media/.*"]
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"

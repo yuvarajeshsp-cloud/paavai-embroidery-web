@@ -6,81 +6,61 @@ Last updated: 14 Oct 2026
 
 | What | Where |
 | --- | --- |
-| Website code | https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web (branch `main`) |
-| Admin page (photos, videos, reviews, prices, links) | https://paavaifashions.com/admin (after step 4) |
-| Enquiries | Netlify → your site → **Forms** → `enquiry` (plus e-mail alerts) |
-| Domain | paavaifashions.com and www (the Shop Manager app is at app.paavaifashions.com) |
-| Hosting | Netlify (site not created yet) |
+| Website | https://paavaifashions.com (www redirects there) |
+| Website code | https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web (branch `main`, Netlify site `paavai-embroidery`) |
+| Admin page (photos, videos, reviews, prices, links) | https://paavaifashions.com/admin, login with a Shop Manager account (Administrator or Manager) |
+| Website content | Shop Manager Supabase project: tables `website_settings`, `website_items`, storage bucket `website-media` (SQL in `supabase/`) |
+| Enquiries | Netlify → Forms → `enquiry`, e-mailed to yuvarajeshsp@gmail.com |
+| Shop Manager app | https://app.paavaifashions.com (separate app; old paavaifashions.com/privacy.html and /delete-account.html links redirect there) |
 | Meta setup guide | `docs/META_SETUP.md` |
-
-The website does **not** depend on Shop Manager (the separate shop/order app).
 
 ## 2. Status
 
 **Done**
 - Website built with Astro: Home, Gallery, Services & prices, About, Contact, Privacy, in English (`/…`) and Tamil (`/ta/…`).
-- Colours #d3d3ff / #9f9fff, with deep indigo for text.
-- WhatsApp +91 95145 88588 on every page. Messages are pre-filled and say where the visitor came from.
-- **Admin page** (`/admin`): gallery (photos, uploaded videos, YouTube links, Instagram post/reel links), reviews, services & prices, logo, phone, Instagram/Facebook/YouTube, Google reviews and "Write a review" links, Google Maps link, address, hours.
-- Enquiry form: saved by Netlify Forms, then opens WhatsApp.
+- WhatsApp +91 95145 88588 on every page, pre-filled messages that say where the visitor came from.
+- Admin page at `/admin` with the Shop Manager login: gallery (photo upload, video upload, YouTube and Instagram links), reviews, services & prices, logo, phone, social and Google links, address, hours. **Publish website** puts changes live.
+- Enquiry form saved by Netlify Forms (e-mail alert), then opens WhatsApp.
 - Meta Pixel + Conversions API, cookie banner, Instagram feed, Shop catalog at `/catalog.xml`, short links `/ig`, `/ig-story`, `/ta/ig`. Switched off until their keys are added.
 
-**Still placeholders** (all editable in `/admin`): address (map hidden), Instagram handle, logo, gallery photos, reviews (marked "sample"), prices (sample list), Google links.
+**Still placeholders** (edit in `/admin`): address (map hidden), logo, gallery photos, reviews (marked "Sample"), prices (sample list), Google links.
 
 ## 3. Work on your computer
 
-Install **Node.js 22 or newer** (https://nodejs.org) and **Git**, then run:
+Install **Node.js 22 or newer** and **Git**, then:
 
 ```sh
 git clone https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web
 cd paavai-embroidery-web
 npm install
-npm run dev        # open http://localhost:4321 (live preview as you edit)
+npm run dev        # http://localhost:4321 — reads the live content from Supabase
 ```
 
-- Admin page locally: in a second terminal run `npx decap-server`, then open http://localhost:4321/admin/ and click **Login** (no password; it edits the files on your computer, commit and push them afterwards).
-- `npm run build`: makes the final site in `dist/` and checks for errors. `npx astro check`: type check.
+`npm run build` makes the final site in `dist/`; `npx astro check` type-checks. Without internet, the dev server falls back to the sample content in `src/data/*.json`. Pushing to `main` deploys automatically.
 
-Saving code changes:
+## 4. Netlify (already set up)
 
-```sh
-git add -A
-git commit -m "Describe the change"
-git push           # Netlify updates the live site automatically (after step 4)
-```
-
-## 4. Put it online (Netlify), one time
-
-1. Open https://app.netlify.com/start/deploy?repository=https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web
-2. Log in with GitHub, allow access to the repo, then click **Save & Deploy**. The settings come from `netlify.toml`.
-3. **Site configuration → Change site name** → `paavai-embroidery`.
-4. **Domain management → Add domain** → `paavaifashions.com`, then copy the DNS records it shows into your domain provider's account. HTTPS turns on automatically.
-5. **Forms**: Netlify → **Forms** → *Enable form detection*, then redeploy once. Under **Forms → Form notifications** add an e-mail notification for `enquiry`.
-6. **Admin login** (lets you log in to `/admin` with GitHub):
-   1. GitHub → Settings → Developer settings → **OAuth Apps** → *New OAuth App*.
-      Homepage URL `https://paavaifashions.com`, Authorization callback URL `https://api.netlify.com/auth/done`. Create it, then *Generate a new client secret*.
-   2. Netlify → **Site configuration → Access & security → OAuth** → *Install provider* → GitHub → paste the Client ID and secret.
-   3. Open https://paavaifashions.com/admin and log in with GitHub. Anyone who should edit the site needs a GitHub account added as a collaborator on the repo.
-7. Optional, for the Instagram feed only: **Build hooks** → create a hook and call it once a day (for example from https://cron-job.org) so the feed stays fresh.
+- Site `paavai-embroidery`, linked to the GitHub repo, domains paavaifashions.com + www.
+- Forms: detection on, e-mail notification for `enquiry`.
+- Environment variable `BUILD_HOOK_URL` (secret): the build hook the **Publish website** button calls (via `netlify/functions/publish.mjs`).
+- Optional: `PUBLIC_META_PIXEL_ID`, `META_CAPI_TOKEN`, `INSTAGRAM_ACCESS_TOKEN` (see `.env.example`). If the Instagram feed is used, call the build hook once a day (e.g. https://cron-job.org) so it stays fresh.
 
 ## 5. Using the admin page
 
-Open `/admin` on your phone or computer → **Website**:
+Open https://paavaifashions.com/admin on a phone or computer and sign in with your Shop Manager e-mail and password. Only **Administrators and Managers** of Paavai Embroidery can sign in; others are turned away.
 
-| Section | What you can do |
+| Tab | What you can do |
 | --- | --- |
-| Gallery – photos & videos | **Add item** → *Photo* (upload from phone), *Video (upload)* (short MP4, under 20 MB, add a cover photo), *YouTube video* (paste link), *Instagram post / reel* (paste link + cover photo). Pick a category, add captions, tick **Show on home page** for the "Recent work" section. Drag to reorder. |
-| Reviews | Copy your Google reviews in (name, stars, text). Turn **Sample** off on real ones. |
+| Gallery | **+ Photos** (pick several at once; they are shrunk before upload), **+ Video** (MP4 under 50 MB), **+ YouTube link**, **+ Instagram link**. Then **Edit** to set category, captions, "Show on home page". ↑ ↓ to reorder, Hide/Show, Delete. |
+| Reviews | Add your Google reviews (name, stars, text). Turn off **Sample** on real ones. |
 | Services & prices | Name, Tamil name, price (empty = "Ask for a quote"), photo for the Instagram Shop. |
-| Shop details & links | Logo, phone, Instagram username, Facebook/YouTube links, Google reviews link, Google "Write a review" link, Google Maps link, address (+ **Show address and map**), hours. |
+| Shop details & links | Logo, phone, Instagram, Facebook, YouTube, Google reviews link, Google "Write a review" link, Google Maps link, address + "Show address and map", hours. |
 
-Click **Publish** (top right). The live site updates in about a minute.
+Changes are saved straight away but appear on the website only after **Publish website** (top right); it takes about a minute. The page shows when there are unpublished changes.
 
-Where to find the Google links:
-- **Write a review**: Google Business Profile (search your shop name on Google while logged in) → *Ask for reviews* → copy the link.
-- **Reviews / Maps link**: Google Maps → your shop → *Share* → *Copy link*.
+Google links: **Write a review** — Google Business Profile → *Ask for reviews* → copy link. **Reviews / Maps** — Google Maps → your shop → *Share* → copy link.
 
-Photos straight from a phone are fine: Netlify resizes them and serves WebP automatically. Long videos make the site repo heavy, so put those on YouTube/Instagram and add a link instead.
+Videos are served from Supabase (free plan: 5 GB of downloads a month), so keep uploads short; put long videos on YouTube/Instagram and add a link.
 
 ## 6. Edits that are still in code
 
@@ -90,7 +70,7 @@ Photos straight from a phone are fine: Netlify resizes them and serves WebP auto
 | Colours and fonts | `src/styles/global.css` (top of the file) |
 | Instagram short links | `public/_redirects` |
 | Privacy text | `src/views/PrivacyView.astro` |
-| Fields shown in the admin page | `public/admin/config.yml` |
+| Fields shown in the admin page | `src/scripts/admin.ts` (field lists near the middle) |
 
 Each page lives once in `src/views/*View.astro`. The files in `src/pages/` (English) and `src/pages/ta/` (Tamil) just show that view in one language.
 
@@ -100,10 +80,11 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 
 ## 8. How it works (for a developer)
 
-- Content lives in `src/data/*.json` and is read at build time: `src/config/site.ts` (settings), `src/lib/gallery.ts`, `src/lib/services.ts`, `src/components/Reviews.astro`.
-- `public/admin/` is Decap CMS (GitHub backend through Netlify's OAuth). Uploads go to `public/images/uploads/` and `public/videos/`.
-- `sizedImage()` in `src/lib/gallery.ts` serves uploaded photos through the Netlify Image CDN (`/.netlify/images`) on Netlify builds.
-- YouTube tiles load `youtube-nocookie.com` only when tapped.
-- `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture (kept 30 days), WhatsApp click tracking (`a[data-wa]`).
-- Enquiry form (`src/components/EnquiryForm.astro`) posts to Netlify Forms (`form-name=enquiry`, honeypot `website`). With consent, it also calls `netlify/functions/enquiry.mjs`, which sends a CAPI `Lead` with the same `event_id` as the browser.
-- `netlify/functions/meta-event.mjs`: server copy of `Contact` / `ViewContent`. `netlify/lib/meta.mjs`: Conversions API helper.
+- `src/lib/content.ts` calls the Supabase RPC `public_website_content(org_slug)` once per build (visible items only). On Netlify a failed fetch fails the build, so the last good version stays live; locally it falls back to `src/data/*.json`.
+- `src/config/supabase.ts`: project URL, publishable key, shop slug and id (public values; env vars `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_SHOP_ORG_SLUG`, `PUBLIC_SHOP_ORG_ID` override them).
+- `src/pages/admin.astro` + `src/scripts/admin.ts`: the admin app (supabase-js). Row level security does the real access control: read for the shop's users, write for its active Administrators/Managers; uploads only under `website-media/<organization_id>/`.
+- `netlify/functions/publish.mjs`: checks the caller's Supabase session and role, then calls `BUILD_HOOK_URL` and stamps `website_settings.published_at`.
+- Photos are resized by the Netlify Image CDN (`sizedImage()` in `src/lib/gallery.ts`; Supabase URLs allowed in `netlify.toml`).
+- Enquiry form: Netlify Forms (`form-name=enquiry`, honeypot `website`); with consent it also calls `netlify/functions/enquiry.mjs` for a CAPI `Lead`.
+- `src/layouts/Base.astro` forwards Supabase auth links (`#access_token=…`, `?code=…`) to app.paavaifashions.com, for older Shop Manager builds that still send them to the main domain.
+- `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture, WhatsApp click tracking.

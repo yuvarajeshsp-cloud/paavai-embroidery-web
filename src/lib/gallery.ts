@@ -1,6 +1,7 @@
-// Gallery items are edited in the admin page (/admin → Gallery), which saves
-// src/data/gallery.json. Photos and videos are uploaded there too.
-import data from '../data/gallery.json';
+// Gallery items are edited in the admin page (/admin → Gallery); photos and
+// videos are uploaded there to Supabase storage.
+import { content } from './content';
+import { SUPABASE_URL } from '../config/supabase';
 
 type Base = {
   category: string;
@@ -16,7 +17,7 @@ export type GalleryItem =
   | (Base & { type: 'youtube'; url: string })
   | (Base & { type: 'instagram'; url: string; image?: string });
 
-export const gallery = (data.items as GalleryItem[]).filter((i) => !i.hidden);
+export const gallery = content.gallery as GalleryItem[];
 
 const labels: Record<string, { en: string; ta: string }> = {
   Bridal: { en: 'Bridal', ta: 'மணப்பெண்' },
@@ -38,10 +39,11 @@ export function youtubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-// Photos uploaded from a phone are often 4–8 MB. On Netlify they are served
-// through its image CDN, resized and converted to WebP/AVIF automatically.
+// Photos are served through Netlify's image CDN, resized and converted to
+// WebP/AVIF automatically (Supabase URLs are allowed in netlify.toml).
 // Elsewhere (local preview) the original file is used.
 export function sizedImage(src: string, width: number): string {
-  if (!import.meta.env.PROD || !process.env.NETLIFY || !src.startsWith('/') || src.endsWith('.svg')) return src;
+  if (!import.meta.env.PROD || !process.env.NETLIFY || src.endsWith('.svg')) return src;
+  if (!src.startsWith('/') && !src.startsWith(`${SUPABASE_URL}/storage/`)) return src;
   return `/.netlify/images?url=${encodeURIComponent(src)}&w=${width}`;
 }

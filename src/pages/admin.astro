@@ -1,0 +1,183 @@
+---
+// Website admin: staff sign in with their Shop Manager account (Administrator
+// or Manager of this shop) and edit the gallery, reviews, services and shop
+// details stored in Supabase. "Publish website" rebuilds the site.
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Website admin · Paavai Embroidery</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mukta+Malar:wght@400;600;700&family=Noto+Serif+Tamil:wght@600;700&family=Playfair+Display:wght@600;700&display=swap"
+    />
+  </head>
+  <body>
+    <main id="admin" class="adm" data-state="loading">
+      <p class="adm__loading">Loading…</p>
+
+      <!-- Sign in -->
+      <section class="adm__login card" data-view="login">
+        <h1>Website admin</h1>
+        <p class="muted">Sign in with your Shop Manager account (the same e-mail and password you use at app.paavaifashions.com).</p>
+        <form id="login-form" class="adm__form">
+          <label>E-mail <input name="email" type="email" autocomplete="username" required /></label>
+          <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
+          <button class="btn btn--primary" type="submit">Sign in</button>
+          <p class="adm__error" role="alert"></p>
+        </form>
+        <p class="muted small">Forgot your password? Reset it in the Shop Manager app, then sign in here.</p>
+      </section>
+
+      <!-- Signed in -->
+      <section data-view="app" class="adm__app">
+        <header class="adm__top">
+          <div>
+            <h1>Website admin</h1>
+            <p class="muted small"><span id="who"></span> · <a href="/" target="_blank" rel="noopener">View website ↗</a> · <button type="button" class="link" id="sign-out">Sign out</button></p>
+          </div>
+          <div class="adm__publish">
+            <span id="publish-status" class="small"></span>
+            <button type="button" class="btn btn--primary" id="publish">Publish website</button>
+          </div>
+        </header>
+
+        <nav class="adm__tabs" role="tablist">
+          <button type="button" role="tab" data-tab="gallery" aria-selected="true">Gallery</button>
+          <button type="button" role="tab" data-tab="review" aria-selected="false">Reviews</button>
+          <button type="button" role="tab" data-tab="service" aria-selected="false">Services &amp; prices</button>
+          <button type="button" role="tab" data-tab="settings" aria-selected="false">Shop details &amp; links</button>
+        </nav>
+
+        <div data-panel="gallery">
+          <div class="adm__toolbar">
+            <label class="btn btn--primary">+ Photos<input type="file" id="add-photos" accept="image/*" multiple hidden /></label>
+            <label class="btn btn--ghost">+ Video<input type="file" id="add-video" accept="video/mp4,video/quicktime,video/webm" hidden /></label>
+            <button type="button" class="btn btn--ghost" data-add="youtube">+ YouTube link</button>
+            <button type="button" class="btn btn--ghost" data-add="instagram">+ Instagram link</button>
+          </div>
+          <p class="muted small">Photos straight from your phone are fine. Videos: short MP4 clips (under 50 MB). Tick “Home page” for the “Recent work” section (first 4).</p>
+          <ul class="adm__grid" id="list-gallery"></ul>
+        </div>
+
+        <div data-panel="review" hidden>
+          <div class="adm__toolbar"><button type="button" class="btn btn--primary" data-add="review">+ Add review</button></div>
+          <p class="muted small">Copy your best Google reviews here. Turn off “Sample” on real ones.</p>
+          <ul class="adm__rows" id="list-review"></ul>
+        </div>
+
+        <div data-panel="service" hidden>
+          <div class="adm__toolbar"><button type="button" class="btn btn--primary" data-add="service">+ Add service</button></div>
+          <p class="muted small">Leave the price empty to show “Ask for a quote”.</p>
+          <ul class="adm__rows" id="list-service"></ul>
+        </div>
+
+        <div data-panel="settings" hidden>
+          <form id="settings-form" class="adm__form adm__form--wide card"></form>
+        </div>
+      </section>
+
+      <dialog id="editor" class="adm__dialog">
+        <form method="dialog" id="editor-form" class="adm__form">
+          <h2 id="editor-title"></h2>
+          <div id="editor-fields"></div>
+          <div class="adm__actions">
+            <button type="button" class="btn btn--ghost" id="editor-cancel">Cancel</button>
+            <button type="submit" class="btn btn--primary" id="editor-save">Save</button>
+          </div>
+        </form>
+      </dialog>
+
+      <div id="toast" class="adm__toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script>
+      import '../scripts/admin';
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  .adm { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; }
+  .adm h1 { font-size: 1.8rem; margin: 0; }
+  .adm .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .adm .muted { color: var(--ink-soft); }
+  .adm .small { font-size: 0.92rem; }
+  .adm [data-view], .adm__loading { display: none; }
+  .adm[data-state='loading'] .adm__loading { display: block; }
+  .adm[data-state='login'] [data-view='login'] { display: block; }
+  .adm[data-state='app'] [data-view='app'] { display: block; }
+  .adm__login { max-width: 420px; margin: 8vh auto 0; }
+  .adm__login h1 { margin-bottom: 8px; }
+  .adm__form { display: grid; gap: 14px; }
+  .adm__form--wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .adm__form label { display: grid; gap: 4px; font-weight: 600; }
+  .adm__form .full { grid-column: 1 / -1; }
+  .adm__form .hint { font-weight: 400; font-size: 0.85rem; color: var(--ink-soft); }
+  .adm__form .check { display: flex; align-items: center; gap: 10px; }
+  .adm__form .check input { width: 20px; height: 20px; min-height: 0; }
+  .adm input, .adm select, .adm textarea {
+    font: inherit; font-weight: 400; color: var(--ink); background: #fff;
+    border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 12px; min-height: 44px; width: 100%;
+  }
+  .adm textarea { min-height: 90px; }
+  .adm__error { color: #a3242f; margin: 0; min-height: 1.4em; }
+  .adm .link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  .adm__top { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .adm__top p { margin: 4px 0 0; }
+  .adm__publish { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .adm__tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+  .adm__tabs button {
+    font: inherit; font-weight: 600; background: none; border: 0; padding: 10px 14px; cursor: pointer;
+    color: var(--ink-soft); border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap;
+  }
+  .adm__tabs button[aria-selected='true'] { color: var(--accent); border-bottom-color: var(--accent); }
+  .adm__toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .adm__toolbar .btn { min-height: 42px; padding: 0.5em 1.1em; }
+  .adm__grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+  .adm__rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .adm__item { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .adm__item[data-hidden='true'] { opacity: 0.55; }
+  .adm__thumb { aspect-ratio: 1; background: var(--lavender); display: grid; place-items: center; overflow: hidden; position: relative; }
+  .adm__thumb img, .adm__thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .adm__thumb span { font-weight: 600; color: var(--ink-soft); padding: 8px; text-align: center; }
+  .adm__body { padding: 10px 12px; display: grid; gap: 4px; flex: 1; }
+  .adm__body strong { line-height: 1.3; }
+  .adm__row { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+  .adm__row[data-hidden='true'] { opacity: 0.55; }
+  .adm__row .adm__body { padding: 0; }
+  .adm__row img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; }
+  .adm__badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .adm__badge { font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--lavender-100); color: var(--ink-soft); }
+  .adm__badge--warn { background: #fff4d6; color: #8a5a00; }
+  .adm__btns { display: flex; gap: 4px; padding: 0 8px 8px; flex-wrap: wrap; }
+  .adm__row .adm__btns { padding: 0; }
+  .adm__btns button {
+    font: inherit; font-size: 0.9rem; background: var(--lavender-50); border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px 10px; cursor: pointer; color: var(--ink); min-height: 34px;
+  }
+  .adm__btns button:hover { background: var(--lavender-100); }
+  .adm__btns button[data-act='delete'] { color: #a3242f; }
+  .adm__dialog { border: 0; border-radius: var(--radius); padding: 24px; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: var(--shadow); }
+  .adm__dialog::backdrop { background: rgb(35 34 79 / 0.45); }
+  .adm__dialog h2 { font-size: 1.4rem; margin: 0; }
+  #editor-fields { display: grid; gap: 14px; }
+  .adm__actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .adm__actions .btn { min-height: 42px; padding: 0.5em 1.2em; }
+  .adm__img-field { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .adm__img-field img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--lavender); }
+  .adm__toast {
+    position: fixed; left: 50%; bottom: 24px; translate: -50% 0; background: var(--ink); color: #fff; padding: 10px 18px;
+    border-radius: 999px; opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: calc(100vw - 32px); z-index: 10;
+  }
+  .adm__toast[data-show='true'] { opacity: 1; }
+  .adm__toast[data-tone='error'] { background: #a3242f; }
+</style>

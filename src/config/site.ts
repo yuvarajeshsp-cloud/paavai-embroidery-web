@@ -1,7 +1,9 @@
 // Business details shown across the site. They are edited in the admin page
-// (/admin → Shop details), which saves src/data/settings.json; only the name
-// and domain are fixed here.
-import settings from '../data/settings.json';
+// (/admin → Shop details) and loaded from Supabase at build time; only the
+// name and domain are fixed here.
+import { content } from '../lib/content';
+
+const settings = content.settings;
 
 const handle = settings.instagram.trim().replace(/^@/, '');
 

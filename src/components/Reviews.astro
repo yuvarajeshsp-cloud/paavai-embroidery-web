@@ -1,7 +1,7 @@
 ---
-// Reviews are edited in the admin page (/admin → Reviews), which saves
-// src/data/reviews.json. Turn off "Sample" on real reviews.
-import data from '../data/reviews.json';
+// Reviews are edited in the admin page (/admin → Reviews). Turn off "Sample"
+// on real reviews.
+import { content } from '../lib/content';
 import { site } from '../config/site';
 import { t, type Lang } from '../i18n/strings';
 
@@ -22,7 +22,7 @@ type Review = {
 
 const { lang } = Astro.props;
 const s = t(lang);
-const reviews = (data.reviews as Review[]).filter((r) => !r.hidden && r.text_en);
+const reviews = (content.reviews as Review[]).filter((r) => r.text_en);
 const hasLinks = site.googleReviewsUrl || site.googleWriteReviewUrl;
 ---
 
