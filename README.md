@@ -1,6 +1,6 @@
 # Paavai Embroidery — website
 
-Public website for **paavaiembroidery.com**: English + Tamil, built with
+Public website for **paavaifashions.com**: English + Tamil, built with
 [Astro](https://astro.build) and hosted on Netlify.
 
 - **Pages:** Home, Gallery (+ live Instagram feed), Services & prices, About, Contact, Privacy — each at `/…` (English) and `/ta/…` (Tamil).
@@ -43,7 +43,7 @@ In code only:
 ## Deploy on Netlify
 
 1. Netlify → *Add new site* → *Import from GitHub* → pick this repo. Build settings come from `netlify.toml`.
-2. *Domain management*: add `paavaiembroidery.com` and follow Netlify's DNS steps.
+2. *Domain management*: add `paavaifashions.com` and follow Netlify's DNS steps.
 3. Admin login: create a GitHub OAuth app and add it under Netlify → *Site configuration → Access & security → OAuth* (steps in [docs/HANDOVER.md](docs/HANDOVER.md)).
 4. *Forms*: enable form detection and add an e-mail notification for the `enquiry` form.
 5. Optional: *Environment variables* from `.env.example` for Meta and the Instagram feed.
@@ -52,9 +52,9 @@ In code only:
 
 `public/_redirects` defines tagged redirects for Instagram:
 
-- `paavaiembroidery.com/ig` — use in the Instagram bio
-- `paavaiembroidery.com/ig-story` — use in story link stickers
-- `paavaiembroidery.com/ta/ig` — Tamil bio link
+- `paavaifashions.com/ig` — use in the Instagram bio
+- `paavaifashions.com/ig-story` — use in story link stickers
+- `paavaifashions.com/ta/ig` — Tamil bio link
 
 For ads, add URL parameters in Ads Manager, e.g.
 `utm_source=instagram&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`.

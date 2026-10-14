@@ -8,8 +8,8 @@ const handle = settings.instagram.trim().replace(/^@/, '');
 export const site = {
   name: 'Paavai Embroidery',
   nameTa: 'பாவை எம்ப்ராய்டரி',
-  domain: 'paavaiembroidery.com',
-  url: 'https://paavaiembroidery.com',
+  domain: 'paavaifashions.com',
+  url: 'https://paavaifashions.com',
 
   logo: settings.logo || null,
 

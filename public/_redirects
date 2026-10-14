@@ -2,3 +2,9 @@
 /ig        /?utm_source=instagram&utm_medium=social&utm_campaign=bio     302
 /ig-story  /?utm_source=instagram&utm_medium=story&utm_campaign=story    302
 /ta/ig     /ta/?utm_source=instagram&utm_medium=social&utm_campaign=bio  302
+
+# The Shop Manager app moved to app.paavaifashions.com. Its old public pages
+# (linked from the App Store / Play Store listings) keep working.
+/privacy.html         https://app.paavaifashions.com/privacy.html         301
+/delete-account.html  https://app.paavaifashions.com/delete-account.html  301
+/app                  https://app.paavaifashions.com/                     301

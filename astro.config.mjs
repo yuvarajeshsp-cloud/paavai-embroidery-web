@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://paavaiembroidery.com',
+  site: 'https://paavaifashions.com',
   trailingSlash: 'ignore',
   i18n: {
     defaultLocale: 'en',

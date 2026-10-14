@@ -49,6 +49,14 @@ const localBusiness = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Shop Manager sign-in links (password reset, invites, e-mail
+         confirmation) from older app versions still point at the main domain:
+         send them on to the app, keeping the token in the URL. -->
+    <script is:inline>
+      if (/(^|[#&?])(access_token|refresh_token|error_code|token_hash|code)=/.test(location.hash + location.search)) {
+        location.replace('https://app.paavaifashions.com/' + location.search + location.hash);
+      }
+    </script>
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />

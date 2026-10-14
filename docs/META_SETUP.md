@@ -17,7 +17,7 @@ followed by a redeploy. Never paste tokens into code, chat or GitHub.
 3. In Netlify, add:
    - `PUBLIC_META_PIXEL_ID` = the Pixel ID
    - `META_CAPI_TOKEN` = the token
-4. *Events Manager → Settings → Domains* (or Business settings → Brand safety → Domains): add and verify `paavaiembroidery.com`.
+4. *Events Manager → Settings → Domains* (or Business settings → Brand safety → Domains): add and verify `paavaifashions.com`.
 5. Test: Events Manager → *Test events* → copy the test code → add it in Netlify as `META_TEST_EVENT_CODE` → redeploy, open the site, accept cookies, tap WhatsApp and send a test enquiry. You should see **PageView**, **Contact** and **Lead**, each marked as received from both *Browser* and *Server* and deduplicated. Remove `META_TEST_EVENT_CODE` afterwards.
 
 What gets sent (only after the visitor taps **Accept** on the cookie banner):
@@ -48,10 +48,10 @@ The feed is fetched on every build, so set up the daily build hook (see README).
 
 ## 4. Instagram / Facebook Shop catalog
 
-The site publishes a product feed at **https://paavaiembroidery.com/catalog.xml**, one item per published service that has a price.
+The site publishes a product feed at **https://paavaifashions.com/catalog.xml**, one item per published service that has a price.
 
 1. *Commerce Manager* (<https://business.facebook.com/commerce>) → *Add catalog* → **E-commerce** → *Upload product info*.
-2. *Data sources → Data feed → Scheduled feed* → URL `https://paavaiembroidery.com/catalog.xml` → repeat **daily**, currency **INR**.
+2. *Data sources → Data feed → Scheduled feed* → URL `https://paavaifashions.com/catalog.xml` → repeat **daily**, currency **INR**.
 3. Connect the catalog to the Pixel (*Catalog → Settings → Event sources*).
 4. To tag products in Instagram posts, set up the shop under *Commerce Manager → Shops* (Meta reviews eligibility).
 
@@ -59,8 +59,8 @@ Each product needs a real photo (JPG or PNG, at least 500×500). Add a photo to 
 
 ## 5. Tagged links
 
-- Instagram bio: `paavaiembroidery.com/ig`
-- Story link sticker: `paavaiembroidery.com/ig-story`
+- Instagram bio: `paavaifashions.com/ig`
+- Story link sticker: `paavaifashions.com/ig-story`
 - Ads (Ads Manager → *URL parameters*): `utm_source=instagram&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`
 
 The source is saved with every enquiry (Netlify → Forms, field `came_from`) and appended to the

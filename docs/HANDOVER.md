@@ -7,9 +7,9 @@ Last updated: 14 Oct 2026
 | What | Where |
 | --- | --- |
 | Website code | https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web (branch `main`) |
-| Admin page (photos, videos, reviews, prices, links) | https://paavaiembroidery.com/admin (after step 4) |
+| Admin page (photos, videos, reviews, prices, links) | https://paavaifashions.com/admin (after step 4) |
 | Enquiries | Netlify → your site → **Forms** → `enquiry` (plus e-mail alerts) |
-| Domain | paavaiembroidery.com (not connected yet) |
+| Domain | paavaifashions.com and www (the Shop Manager app is at app.paavaifashions.com) |
 | Hosting | Netlify (site not created yet) |
 | Meta setup guide | `docs/META_SETUP.md` |
 
@@ -54,13 +54,13 @@ git push           # Netlify updates the live site automatically (after step 4)
 1. Open https://app.netlify.com/start/deploy?repository=https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web
 2. Log in with GitHub, allow access to the repo, then click **Save & Deploy**. The settings come from `netlify.toml`.
 3. **Site configuration → Change site name** → `paavai-embroidery`.
-4. **Domain management → Add domain** → `paavaiembroidery.com`, then copy the DNS records it shows into your domain provider's account. HTTPS turns on automatically.
+4. **Domain management → Add domain** → `paavaifashions.com`, then copy the DNS records it shows into your domain provider's account. HTTPS turns on automatically.
 5. **Forms**: Netlify → **Forms** → *Enable form detection*, then redeploy once. Under **Forms → Form notifications** add an e-mail notification for `enquiry`.
 6. **Admin login** (lets you log in to `/admin` with GitHub):
    1. GitHub → Settings → Developer settings → **OAuth Apps** → *New OAuth App*.
-      Homepage URL `https://paavaiembroidery.com`, Authorization callback URL `https://api.netlify.com/auth/done`. Create it, then *Generate a new client secret*.
+      Homepage URL `https://paavaifashions.com`, Authorization callback URL `https://api.netlify.com/auth/done`. Create it, then *Generate a new client secret*.
    2. Netlify → **Site configuration → Access & security → OAuth** → *Install provider* → GitHub → paste the Client ID and secret.
-   3. Open https://paavaiembroidery.com/admin and log in with GitHub. Anyone who should edit the site needs a GitHub account added as a collaborator on the repo.
+   3. Open https://paavaifashions.com/admin and log in with GitHub. Anyone who should edit the site needs a GitHub account added as a collaborator on the repo.
 7. Optional, for the Instagram feed only: **Build hooks** → create a hook and call it once a day (for example from https://cron-job.org) so the feed stays fresh.
 
 ## 5. Using the admin page
@@ -96,7 +96,7 @@ Each page lives once in `src/views/*View.astro`. The files in `src/pages/` (Engl
 
 ## 7. Meta / Instagram
 
-Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_PIXEL_ID`, `META_CAPI_TOKEN`), then the Instagram feed token (`INSTAGRAM_ACCESS_TOKEN`, which **must be refreshed every 60 days**), then the catalog feed URL `https://paavaiembroidery.com/catalog.xml`.
+Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_PIXEL_ID`, `META_CAPI_TOKEN`), then the Instagram feed token (`INSTAGRAM_ACCESS_TOKEN`, which **must be refreshed every 60 days**), then the catalog feed URL `https://paavaifashions.com/catalog.xml`.
 
 ## 8. How it works (for a developer)
 

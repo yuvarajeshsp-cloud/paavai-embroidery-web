@@ -1,6 +1,6 @@
 // Product feed for Meta Commerce Manager (Instagram / Facebook Shop).
 // Commerce Manager -> Catalog -> Data sources -> Data feed -> scheduled feed
-// URL: https://paavaiembroidery.com/catalog.xml (refresh daily).
+// URL: https://paavaifashions.com/catalog.xml (refresh daily).
 // Meta needs a JPG/PNG image (min 500x500) for every item: services without
 // an image fall back to the matching gallery photo, then the default one.
 import type { APIRoute } from 'astro';

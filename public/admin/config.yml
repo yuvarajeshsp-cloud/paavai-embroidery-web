@@ -1,4 +1,4 @@
-# Admin page for the website: https://paavaiembroidery.com/admin
+# Admin page for the website: https://paavaifashions.com/admin
 # Log in with a GitHub account that can write to the repo. Each "Publish"
 # saves a commit to main and Netlify updates the live site in about a minute.
 backend:
@@ -14,8 +14,8 @@ backend:
 # logging in (changes are written straight to the files on your computer).
 local_backend: true
 
-site_url: https://paavaiembroidery.com
-display_url: https://paavaiembroidery.com
+site_url: https://paavaifashions.com
+display_url: https://paavaifashions.com
 logo_url: /favicon.svg
 
 media_folder: public/images/uploads
