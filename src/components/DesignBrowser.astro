@@ -1,0 +1,333 @@
+---
+// Filterable design grid. Every design is in the page (good for Google and
+// fast to filter); filtering, sorting and "show more" run in the browser and
+// are kept in the URL (?cat=&price=&work=&q=&sort=) so a filtered view can be
+// shared.
+import DesignCard from './DesignCard.astro';
+import { PRICE_BUCKETS, WORK_TYPES, categoryName, subcategories, type Category, type Design } from '../lib/designs';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  designs: Design[];
+  // Chips to filter by: top-level categories (all-designs page) or the
+  // subcategories of the category being shown.
+  chips: Category[];
+  // On the all-designs page, picking a top-level chip shows its subcategories.
+  nested?: boolean;
+}
+
+const { lang, designs, chips, nested = false } = Astro.props;
+const s = t(lang).designs;
+const usedTags = Object.keys(WORK_TYPES).filter((tag) => designs.some((d) => d.tags.includes(tag)));
+const hasPrices = designs.some((d) => d.price_type !== 'ask' && d.price != null);
+const chipCats = chips.filter((c) => designs.some((d) => d.category_id === c.id || subcategories(c.id).some((sc) => sc.id === d.category_id)));
+const subChips = nested
+  ? chipCats.flatMap((c) => subcategories(c.id).filter((sc) => designs.some((d) => d.category_id === sc.id)))
+  : [];
+---
+
+<div class="browser" data-page-size="48" data-count-one={s.count(1)} data-count-many={s.count(2).replace('2', '{n}')}>
+  <div class="browser__bar">
+    <input class="browser__search" type="search" name="q" placeholder={s.search} aria-label={s.search} />
+    {
+      hasPrices && (
+        <select name="price" aria-label={s.price}>
+          <option value="">{s.anyPrice}</option>
+          {PRICE_BUCKETS.map((b) => (
+            <option value={b.id} data-min={b.min} data-max={b.max === Infinity ? 'inf' : b.max}>
+              {b[lang]}
+            </option>
+          ))}
+        </select>
+      )
+    }
+    {
+      usedTags.length > 0 && (
+        <select name="work" aria-label={s.work}>
+          <option value="">{s.anyWork}</option>
+          {usedTags.map((tag) => (
+            <option value={tag}>{WORK_TYPES[tag][lang]}</option>
+          ))}
+        </select>
+      )
+    }
+    <select name="sort" aria-label={s.sort}>
+      <option value="">{s.newest}</option>
+      {hasPrices && <option value="low">{s.priceLow}</option>}
+      {hasPrices && <option value="high">{s.priceHigh}</option>}
+    </select>
+  </div>
+
+  {
+    chipCats.length > 1 && (
+      <div class="chips" role="group" aria-label={s.categories} data-level="top">
+        <button type="button" class="chip" aria-pressed="true" data-cat="">
+          {s.all}
+        </button>
+        {chipCats.map((c) => (
+          <button type="button" class="chip" aria-pressed="false" data-cat={c.id} data-slug={c.slug}>
+            {categoryName(c, lang)}
+          </button>
+        ))}
+      </div>
+    )
+  }
+  {
+    subChips.length > 0 && (
+      <div class="chips chips--sub" role="group" aria-label={s.categories} data-level="sub" hidden>
+        {subChips.map((c) => (
+          <button type="button" class="chip" aria-pressed="false" data-cat={c.id} data-slug={c.slug} data-parent={c.parent_id} hidden>
+            {categoryName(c, lang)}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <p class="browser__count" aria-live="polite"></p>
+
+  <ul class="browser__grid">
+    {designs.map((d, i) => <DesignCard lang={lang} design={d} index={i} eager={i < 4} />)}
+  </ul>
+
+  <div class="browser__empty" hidden>
+    <p>{s.none}</p>
+    <button type="button" class="btn btn--ghost" data-clear>{s.clear}</button>
+  </div>
+  <p class="browser__more"><button type="button" class="btn btn--ghost" hidden>{s.showMore}</button></p>
+</div>
+
+<style>
+  .browser__bar {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 14px;
+  }
+  .browser__search {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 760px) {
+    .browser__bar {
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+    }
+    .browser__search {
+      grid-column: auto;
+    }
+  }
+  .browser__bar input,
+  .browser__bar select {
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-height: 46px;
+    width: 100%;
+  }
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+  }
+  .chips[hidden],
+  .chip[hidden] {
+    display: none;
+  }
+  .chip {
+    flex: none;
+    font: inherit;
+    font-weight: 600;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 2px solid var(--periwinkle);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chips--sub .chip {
+    min-height: 34px;
+    font-size: 0.92rem;
+    border-width: 1.5px;
+  }
+  .chip[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .browser__count {
+    color: var(--ink-soft);
+    margin: 4px 0 12px;
+    font-size: 0.95rem;
+  }
+  .browser__grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(min(46%, 210px), 1fr));
+  }
+  @media (max-width: 480px) {
+    .browser__grid {
+      gap: 10px;
+    }
+  }
+  .browser__empty {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--ink-soft);
+  }
+  .browser__more {
+    text-align: center;
+    margin-top: 24px;
+  }
+  .browser__more [hidden] {
+    display: none;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.browser').forEach((root) => {
+    const grid = root.querySelector<HTMLUListElement>('.browser__grid')!;
+    const cards = [...grid.querySelectorAll<HTMLLIElement>('.dcard')];
+    const q = root.querySelector<HTMLInputElement>('[name=q]')!;
+    const price = root.querySelector<HTMLSelectElement>('[name=price]');
+    const work = root.querySelector<HTMLSelectElement>('[name=work]');
+    const sort = root.querySelector<HTMLSelectElement>('[name=sort]')!;
+    const top = root.querySelector<HTMLElement>('.chips[data-level=top]');
+    const sub = root.querySelector<HTMLElement>('.chips[data-level=sub]');
+    const count = root.querySelector<HTMLElement>('.browser__count')!;
+    const empty = root.querySelector<HTMLElement>('.browser__empty')!;
+    const more = root.querySelector<HTMLButtonElement>('.browser__more button')!;
+    const pageSize = Number(root.dataset.pageSize) || 48;
+    let limit = pageSize;
+    let cat = '';
+    let subCat = '';
+
+    const num = (v?: string) => (v === 'inf' ? Infinity : v ? Number(v) : NaN);
+    const slugOf = (id: string) => root.querySelector<HTMLElement>(`.chip[data-cat="${id}"]`)?.dataset.slug ?? '';
+    const idOf = (slug: string) => root.querySelector<HTMLElement>(`.chip[data-slug="${CSS.escape(slug)}"]`);
+
+    function setChips() {
+      top?.querySelectorAll<HTMLElement>('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.cat === cat)));
+      if (sub) {
+        let any = false;
+        sub.querySelectorAll<HTMLElement>('.chip').forEach((c) => {
+          const show = c.dataset.parent === cat;
+          c.hidden = !show;
+          any ||= show;
+          c.setAttribute('aria-pressed', String(c.dataset.cat === subCat));
+        });
+        sub.hidden = !any;
+      }
+    }
+
+    function apply(resetLimit = true) {
+      if (resetLimit) limit = pageSize;
+      const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const opt = price?.selectedOptions[0];
+      const pMin = num(opt?.dataset.min);
+      const pMax = num(opt?.dataset.max);
+      const tag = work?.value ?? '';
+
+      const matches = cards.filter((c) => {
+        const d = c.dataset;
+        if (subCat && d.cat !== subCat) return false;
+        if (!subCat && cat && d.cat !== cat && d.parent !== cat) return false;
+        if (tag && !d.tags!.split(' ').includes(tag)) return false;
+        if (price?.value) {
+          if (!d.min) return false;
+          if (num(d.max) < pMin || num(d.min) > pMax) return false;
+        }
+        return words.every((w) => d.search!.includes(w));
+      });
+
+      const key = (c: HTMLElement) => (c.dataset.min ? Number(c.dataset.min) : NaN);
+      const order = [...matches];
+      if (sort.value) {
+        order.sort((a, b) => {
+          const x = key(a);
+          const y = key(b);
+          if (isNaN(x) !== isNaN(y)) return isNaN(x) ? 1 : -1; // "price on request" last
+          return sort.value === 'low' ? x - y : y - x;
+        });
+      } else {
+        order.sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
+      }
+
+      const visible = new Set(order.slice(0, limit));
+      cards.forEach((c) => (c.hidden = !visible.has(c)));
+      order.forEach((c) => grid.append(c));
+
+      const n = matches.length;
+      count.textContent = (n === 1 ? root.dataset.countOne : root.dataset.countMany)!.replace('{n}', String(n));
+      empty.hidden = n > 0;
+      more.hidden = n <= limit;
+
+      const params = new URLSearchParams();
+      const slug = slugOf(subCat || cat);
+      if (slug) params.set('cat', slug);
+      if (price?.value) params.set('price', price.value);
+      if (tag) params.set('work', tag);
+      if (q.value.trim()) params.set('q', q.value.trim());
+      if (sort.value) params.set('sort', sort.value);
+      const qs = params.toString();
+      history.replaceState(history.state, '', qs ? `?${qs}` : location.pathname);
+    }
+
+    // Restore filters from the URL.
+    const params = new URLSearchParams(location.search);
+    const chip = params.get('cat') ? idOf(params.get('cat')!) : null;
+    if (chip?.dataset.parent) {
+      cat = chip.dataset.parent;
+      subCat = chip.dataset.cat!;
+    } else if (chip) cat = chip.dataset.cat!;
+    if (price) price.value = params.get('price') ?? '';
+    if (work) work.value = params.get('work') ?? '';
+    q.value = params.get('q') ?? '';
+    sort.value = params.get('sort') ?? '';
+    setChips();
+    apply();
+
+    let timer = 0;
+    q.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => apply(), 150);
+    });
+    [price, work, sort].forEach((el) => el?.addEventListener('change', () => apply()));
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.chip');
+      if (btn) {
+        if (btn.closest('[data-level=sub]')) subCat = subCat === btn.dataset.cat ? '' : btn.dataset.cat!;
+        else {
+          cat = btn.dataset.cat!;
+          subCat = '';
+        }
+        setChips();
+        apply();
+        return;
+      }
+      if ((e.target as HTMLElement).closest('[data-clear]')) {
+        cat = subCat = '';
+        q.value = '';
+        if (price) price.value = '';
+        if (work) work.value = '';
+        sort.value = '';
+        setChips();
+        apply();
+      }
+    });
+    more.addEventListener('click', () => {
+      limit += pageSize;
+      apply(false);
+    });
+  });
+</script>

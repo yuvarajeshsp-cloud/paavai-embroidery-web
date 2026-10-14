@@ -1,0 +1,78 @@
+---
+// Picture links to category pages (only categories that have designs).
+import { sizedImage } from '../lib/media';
+import { categoryName, categoryUrl, designsIn, type Category } from '../lib/designs';
+import type { Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  categories: Category[];
+}
+
+const { lang, categories } = Astro.props;
+const tiles = categories
+  .map((c) => {
+    const list = designsIn(c.id);
+    return { c, count: list.length, image: c.cover_image || list[0]?.images[0] };
+  })
+  .filter((x) => x.count > 0);
+---
+
+{
+  tiles.length > 1 && (
+    <ul class="tiles">
+      {tiles.map(({ c, count, image }) => (
+        <li>
+          <a href={categoryUrl(lang, c.slug)}>
+            {image && <img src={sizedImage(image, 320)} alt="" loading="lazy" decoding="async" width="160" height="160" />}
+            <span class="tiles__name">{categoryName(c, lang)}</span>
+            <span class="tiles__count">{count}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .tiles {
+    list-style: none;
+    padding: 0 0 6px;
+    margin: 0 0 20px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tiles li {
+    flex: none;
+    width: 128px;
+  }
+  .tiles a {
+    display: grid;
+    gap: 2px;
+    text-decoration: none;
+    color: var(--ink);
+    text-align: center;
+  }
+  .tiles img {
+    width: 128px;
+    height: 128px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--lavender);
+    background: var(--lavender);
+  }
+  .tiles a:hover img {
+    border-color: var(--periwinkle);
+  }
+  .tiles__name {
+    font-weight: 600;
+    line-height: 1.25;
+    margin-top: 6px;
+  }
+  .tiles__count {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+</style>

@@ -1,0 +1,12 @@
+---
+import DesignView from '../../views/DesignView.astro';
+import { designs, type Design } from '../../lib/designs';
+
+export function getStaticPaths() {
+  return designs.map((design) => ({ params: { code: design.code.toLowerCase() }, props: { design } }));
+}
+
+const { design } = Astro.props as { design: Design };
+---
+
+<DesignView lang="en" design={design} />

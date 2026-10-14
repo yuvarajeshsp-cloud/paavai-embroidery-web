@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import DesignBrowser from '../components/DesignBrowser.astro';
+import CategoryTiles from '../components/CategoryTiles.astro';
+import InstagramFeed from '../components/InstagramFeed.astro';
+import { designs, topCategories } from '../lib/designs';
+import { whatsappLink } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+---
+
+<Base lang={lang} title={s.designs.title} description={s.designs.intro} path="/designs">
+  <section class="section section--tight">
+    <div class="container">
+      <h1>{s.designs.title}</h1>
+      <p class="section__intro">{s.designs.intro}</p>
+      {
+        designs.length > 0 ? (
+          <>
+            <CategoryTiles lang={lang} categories={topCategories} />
+            <DesignBrowser lang={lang} designs={designs} chips={topCategories} nested />
+          </>
+        ) : (
+          <div class="card soon">
+            <p>{s.designs.soon}</p>
+            <a class="btn btn--whatsapp" href={whatsappLink(s.waGreeting)} data-wa="designs-empty" rel="noopener">
+              {s.ctaWhatsapp}
+            </a>
+          </div>
+        )
+      }
+    </div>
+  </section>
+  <InstagramFeed lang={lang} />
+</Base>
+
+<style>
+  .section--tight {
+    padding-top: clamp(28px, 5vw, 56px);
+  }
+  .soon {
+    text-align: center;
+  }
+</style>

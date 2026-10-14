@@ -1,0 +1,135 @@
+---
+import { sizedImage } from '../lib/media';
+import {
+  categoryById,
+  categoryName,
+  designName,
+  designUrl,
+  isNew,
+  priceBounds,
+  priceLabel,
+  tagLabel,
+  type Design,
+} from '../lib/designs';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  design: Design;
+  index?: number;
+  eager?: boolean;
+}
+
+const { lang, design: d, index = 0, eager = false } = Astro.props;
+const s = t(lang).designs;
+const cat = categoryById(d.category_id)!;
+const bounds = priceBounds(d);
+const name = designName(d, lang);
+const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags.map((x) => tagLabel(x, lang))]
+  .filter(Boolean)
+  .join(' ')
+  .toLowerCase();
+---
+
+<li
+  class="dcard"
+  data-cat={d.category_id}
+  data-parent={cat.parent_id ?? ''}
+  data-min={bounds ? bounds[0] : ''}
+  data-max={bounds ? (bounds[1] === Infinity ? 'inf' : bounds[1]) : ''}
+  data-tags={d.tags.join(' ')}
+  data-search={search}
+  data-index={index}
+>
+  <a href={designUrl(lang, d.code)}>
+    <div class="dcard__img">
+      <img
+        src={sizedImage(d.images[0], 480)}
+        alt={`${name} – ${d.code}`}
+        loading={eager ? 'eager' : 'lazy'}
+        decoding="async"
+        width="480"
+        height="600"
+      />
+      {isNew(d) && <span class="dcard__badge">{s.isNew}</span>}
+      {!d.available && <span class="dcard__badge dcard__badge--off">{s.unavailable}</span>}
+    </div>
+    <div class="dcard__body">
+      <span class="dcard__code">{d.code}</span>
+      <span class="dcard__name">{name}</span>
+      <span class="dcard__price">{priceLabel(d, lang)}</span>
+    </div>
+  </a>
+</li>
+
+<style>
+  .dcard {
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .dcard[hidden] {
+    display: none;
+  }
+  .dcard:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+  .dcard a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+  .dcard__img {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    background: var(--lavender);
+  }
+  .dcard__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .dcard__badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+  }
+  .dcard__badge--off {
+    left: auto;
+    right: 8px;
+    background: rgb(35 34 79 / 0.8);
+  }
+  .dcard__body {
+    padding: 10px 12px 12px;
+    display: grid;
+    gap: 2px;
+  }
+  .dcard__code {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  .dcard__name {
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .dcard__price {
+    font-weight: 700;
+    color: var(--ink);
+  }
+</style>

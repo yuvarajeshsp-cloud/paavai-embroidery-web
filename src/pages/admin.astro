@@ -1,7 +1,7 @@
 ---
 // Website admin: staff sign in with their Shop Manager account (Administrator
-// or Manager of this shop) and edit the gallery, reviews, services and shop
-// details stored in Supabase. "Publish website" rebuilds the site.
+// or Manager of this shop) and edit the design catalogue, reviews, services
+// and shop details stored in Supabase. "Publish website" rebuilds the site.
 import '../styles/global.css';
 ---
 
@@ -51,21 +51,40 @@ import '../styles/global.css';
         </header>
 
         <nav class="adm__tabs" role="tablist">
-          <button type="button" role="tab" data-tab="gallery" aria-selected="true">Gallery</button>
+          <button type="button" role="tab" data-tab="design" aria-selected="true">Designs</button>
+          <button type="button" role="tab" data-tab="category" aria-selected="false">Categories</button>
           <button type="button" role="tab" data-tab="review" aria-selected="false">Reviews</button>
           <button type="button" role="tab" data-tab="service" aria-selected="false">Services &amp; prices</button>
           <button type="button" role="tab" data-tab="settings" aria-selected="false">Shop details &amp; links</button>
         </nav>
 
-        <div data-panel="gallery">
+        <div data-panel="design">
+          <p class="adm__usage small" id="usage"></p>
           <div class="adm__toolbar">
-            <label class="btn btn--primary">+ Photos<input type="file" id="add-photos" accept="image/*" multiple hidden /></label>
-            <label class="btn btn--ghost">+ Video<input type="file" id="add-video" accept="video/mp4,video/quicktime,video/webm" hidden /></label>
-            <button type="button" class="btn btn--ghost" data-add="youtube">+ YouTube link</button>
-            <button type="button" class="btn btn--ghost" data-add="instagram">+ Instagram link</button>
+            <label class="btn btn--primary">+ Upload photos (one design each)<input type="file" id="bulk-files" accept="image/*" multiple hidden /></label>
+            <button type="button" class="btn btn--ghost" data-add="design">+ Add design</button>
           </div>
-          <p class="muted small">Photos straight from your phone are fine. Videos: short MP4 clips (under 50 MB). Tick “Home page” for the “Recent work” section (first 4).</p>
-          <ul class="adm__grid" id="list-gallery"></ul>
+          <p class="muted small">Pick many photos at once: each becomes a new design with its own code (PE-0001…) in the category you choose. Then set prices in the list below. To add more photos to one design, use Edit. Photos are shrunk and watermarked automatically.</p>
+          <div class="adm__filters">
+            <input type="search" id="f-q" placeholder="Search code or title" aria-label="Search designs" />
+            <select id="f-cat" aria-label="Category"></select>
+            <select id="f-state" aria-label="Show">
+              <option value="">All designs</option>
+              <option value="noprice">Price not set</option>
+              <option value="featured">Featured</option>
+              <option value="hidden">Hidden</option>
+              <option value="unavailable">Not available</option>
+            </select>
+          </div>
+          <p class="muted small" id="design-count"></p>
+          <ul class="adm__rows" id="list-design"></ul>
+          <p class="adm__more"><button type="button" class="btn btn--ghost" id="design-more" hidden>Show more</button></p>
+        </div>
+
+        <div data-panel="category" hidden>
+          <div class="adm__toolbar"><button type="button" class="btn btn--primary" data-add="category">+ Add category</button></div>
+          <p class="muted small">Categories can have one level of subcategories (e.g. Blouse › Back neck). A category that still has designs or subcategories can't be deleted; hide it instead.</p>
+          <ul class="adm__rows" id="list-category"></ul>
         </div>
 
         <div data-panel="review" hidden>
@@ -142,6 +161,30 @@ import '../styles/global.css';
   .adm__tabs button[aria-selected='true'] { color: var(--accent); border-bottom-color: var(--accent); }
   .adm__toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
   .adm__toolbar .btn { min-height: 42px; padding: 0.5em 1.1em; }
+  .adm__filters { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 12px 0 4px; }
+  .adm__filters input { grid-column: 1 / -1; }
+  @media (min-width: 760px) { .adm__filters { grid-template-columns: 2fr 1.4fr 1fr; } .adm__filters input { grid-column: auto; } }
+  .adm__usage { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--lavender-100); }
+  .adm__usage[data-warn='true'] { background: #fff4d6; color: #8a5a00; }
+  .adm__more { text-align: center; }
+  .adm__row--child { margin-left: 28px; }
+  .adm__price { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .adm__price select, .adm__price input { min-height: 36px; padding: 4px 8px; width: auto; }
+  .adm__price input { width: 110px; }
+  .adm__row .adm__body { min-width: 0; }
+  @media (max-width: 640px) {
+    .adm__row { flex-wrap: wrap; }
+    .adm__row .adm__btns { width: 100%; }
+  }
+  .adm__photos { display: flex; gap: 8px; flex-wrap: wrap; }
+  .adm__photo { position: relative; width: 88px; }
+  .adm__photo img { width: 88px; height: 110px; object-fit: cover; border-radius: 8px; background: var(--lavender); }
+  .adm__photo div { display: flex; justify-content: space-between; }
+  .adm__photo button { font: inherit; font-size: 0.85rem; border: 1px solid var(--border); background: #fff; border-radius: 6px; padding: 0 6px; cursor: pointer; }
+  .adm__photo span { position: absolute; top: 4px; left: 4px; font-size: 0.7rem; font-weight: 700; background: var(--accent); color: #fff; border-radius: 999px; padding: 0 6px; }
+  .adm__checks { display: flex; flex-wrap: wrap; gap: 6px 14px; font-weight: 400; }
+  .adm__checks label { display: flex; align-items: center; gap: 6px; font-weight: 400; }
+  .adm__checks input { width: 18px; height: 18px; min-height: 0; }
   .adm__grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
   .adm__rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
   .adm__item { background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }

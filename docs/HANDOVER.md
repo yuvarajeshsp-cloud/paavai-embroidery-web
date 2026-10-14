@@ -9,7 +9,7 @@ Last updated: 14 Oct 2026
 | Website | https://paavaifashions.com (www redirects there) |
 | Website code | https://github.com/yuvarajeshsp-cloud/paavai-embroidery-web (branch `main`, Netlify site `paavai-embroidery`) |
 | Admin page (photos, videos, reviews, prices, links) | https://paavaifashions.com/admin, login with a Shop Manager account (Administrator or Manager) |
-| Website content | Shop Manager Supabase project: tables `website_settings`, `website_items`, storage bucket `website-media` (SQL in `supabase/`) |
+| Website content | Shop Manager Supabase project: tables `website_categories`, `website_designs`, `website_settings`, `website_items` (reviews, services), storage bucket `website-media` (SQL in `supabase/`) |
 | Enquiries | Netlify → Forms → `enquiry`, e-mailed to yuvarajeshsp@gmail.com |
 | Shop Manager app | https://app.paavaifashions.com (separate app; old paavaifashions.com/privacy.html and /delete-account.html links redirect there) |
 | Meta setup guide | `docs/META_SETUP.md` |
@@ -17,13 +17,14 @@ Last updated: 14 Oct 2026
 ## 2. Status
 
 **Done**
-- Website built with Astro: Home, Gallery, Services & prices, About, Contact, Privacy, in English (`/…`) and Tamil (`/ta/…`).
+- Website built with Astro: Home, Designs (catalogue), Services & prices, About, Contact, Privacy, in English (`/…`) and Tamil (`/ta/…`).
+- Design catalogue: `/designs` (search, category and subcategory chips, price and work-type filters, sorting), a page per category (`/designs/<slug>`) and per design (`/design/pe-0001`) with photos, price, WhatsApp enquiry with the design code, share button and similar designs. `/gallery` redirects to `/designs`.
 - WhatsApp +91 95145 88588 on every page, pre-filled messages that say where the visitor came from.
-- Admin page at `/admin` with the Shop Manager login: gallery (photo upload, video upload, YouTube and Instagram links), reviews, services & prices, logo, phone, social and Google links, address, hours. **Publish website** puts changes live.
+- Admin page at `/admin` with the Shop Manager login: designs (bulk photo upload, watermark, quick price editing), categories and subcategories, reviews, services & prices, logo, phone, social and Google links, address, hours. **Publish website** puts changes live.
 - Enquiry form saved by Netlify Forms (e-mail alert), then opens WhatsApp.
 - Meta Pixel + Conversions API, cookie banner, Instagram feed, Shop catalog at `/catalog.xml`, short links `/ig`, `/ig-story`, `/ta/ig`. Switched off until their keys are added.
 
-**Still placeholders** (edit in `/admin`): address (map hidden), logo, gallery photos, reviews (marked "Sample"), prices (sample list), Google links.
+**Still to fill in** (in `/admin`): designs (starter categories are there, no designs yet), address (map hidden), logo, reviews (marked "Sample"), service prices (sample list), Google links.
 
 ## 3. Work on your computer
 
@@ -51,16 +52,19 @@ Open https://paavaifashions.com/admin on a phone or computer and sign in with yo
 
 | Tab | What you can do |
 | --- | --- |
-| Gallery | **+ Photos** (pick several at once; they are shrunk before upload), **+ Video** (MP4 under 50 MB), **+ YouTube link**, **+ Instagram link**. Then **Edit** to set category, captions, "Show on home page". ↑ ↓ to reorder, Hide/Show, Delete. |
+| Designs | **+ Upload photos (one design each)**: pick many photos, choose the category (and optionally price and work type) and each photo becomes a design with its own code, PE-0001, PE-0002… Then set prices right in the list (Price on request / Fixed / From / Range). **Edit** a design to add more photos (← → to order, first = main photo), title, description, work type, delivery time, video, Featured, Available, Hide. Filter by category, "Price not set", hidden… A storage meter shows how much of the 1 GB free space is used. |
+| Categories | Add categories and subcategories (one level, e.g. Blouse › Back neck) with English and Tamil names and an optional cover photo. ↑ ↓ to order, Hide/Show. A category with designs or subcategories can't be deleted — hide it instead. |
 | Reviews | Add your Google reviews (name, stars, text). Turn off **Sample** on real ones. |
 | Services & prices | Name, Tamil name, price (empty = "Ask for a quote"), photo for the Instagram Shop. |
 | Shop details & links | Logo, phone, Instagram, Facebook, YouTube, Google reviews link, Google "Write a review" link, Google Maps link, address + "Show address and map", hours. |
+
+Design photos are shrunk to 1600 px and get a small "Paavai Embroidery · PE-0001" watermark in the bottom-right corner when uploaded; the original is not stored, so keep your originals on your phone. A design without photos, or in a hidden category, is not shown on the website.
 
 Changes are saved straight away but appear on the website only after **Publish website** (top right); it takes about a minute. The page shows when there are unpublished changes.
 
 Google links: **Write a review** — Google Business Profile → *Ask for reviews* → copy link. **Reviews / Maps** — Google Maps → your shop → *Share* → copy link.
 
-Videos are served from Supabase (free plan: 5 GB of downloads a month), so keep uploads short; put long videos on YouTube/Instagram and add a link.
+Storage: the Supabase free plan has 1 GB for all files (shared with Shop Manager's order attachments). 500 designs × 3 photos ≈ 0.5–0.6 GB. When the meter passes 80 %, move to Supabase Pro (100 GB). Videos are served from Supabase (5 GB of downloads a month on the free plan), so keep them short.
 
 ## 6. Edits that are still in code
 
@@ -80,11 +84,11 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 
 ## 8. How it works (for a developer)
 
-- `src/lib/content.ts` calls the Supabase RPC `public_website_content(org_slug)` once per build (visible items only). On Netlify a failed fetch fails the build, so the last good version stays live; locally it falls back to `src/data/*.json`.
+- `src/lib/content.ts` calls the Supabase RPC `public_website_content(org_slug)` once per build (visible categories, designs with photos, reviews, services, settings). `src/lib/designs.ts` turns it into category/design helpers; `src/components/DesignBrowser.astro` does the filtering in the browser (all designs are in the page; 500 designs ≈ 30 KB gzipped). On Netlify a failed fetch fails the build, so the last good version stays live; locally it falls back to `src/data/*.json`.
 - `src/config/supabase.ts`: project URL, publishable key, shop slug and id (public values; env vars `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PUBLIC_SHOP_ORG_SLUG`, `PUBLIC_SHOP_ORG_ID` override them).
-- `src/pages/admin.astro` + `src/scripts/admin.ts`: the admin app (supabase-js). Row level security does the real access control: read for the shop's users, write for its active Administrators/Managers; uploads only under `website-media/<organization_id>/`.
+- `src/pages/admin.astro` + `src/scripts/admin.ts`: the admin app (supabase-js); photos are resized and watermarked in the browser before upload. Design codes come from a database trigger (`assign_website_design_code`). Row level security does the real access control: read for the shop's users, write for its active Administrators/Managers; uploads only under `website-media/<organization_id>/`.
 - `netlify/functions/publish.mjs`: checks the caller's Supabase session and role, then calls `BUILD_HOOK_URL` and stamps `website_settings.published_at`.
-- Photos are resized by the Netlify Image CDN (`sizedImage()` in `src/lib/gallery.ts`; Supabase URLs allowed in `netlify.toml`).
+- Photos are resized by the Netlify Image CDN (`sizedImage()` in `src/lib/media.ts`; Supabase URLs allowed in `netlify.toml`).
 - Enquiry form: Netlify Forms (`form-name=enquiry`, honeypot `website`); with consent it also calls `netlify/functions/enquiry.mjs` for a CAPI `Lead`.
 - `src/layouts/Base.astro` forwards Supabase auth links (`#access_token=…`, `?code=…`) to app.paavaifashions.com, for older Shop Manager builds that still send them to the main domain.
 - `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture, WhatsApp click tracking.

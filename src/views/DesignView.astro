@@ -1,0 +1,249 @@
+---
+import Base from '../layouts/Base.astro';
+import DesignCard from '../components/DesignCard.astro';
+import { sizedImage } from '../lib/media';
+import {
+  categoryById,
+  categoryName,
+  categoryUrl,
+  designName,
+  designUrl,
+  designs,
+  designsIn,
+  priceLabel,
+  tagLabel,
+  type Design,
+} from '../lib/designs';
+import { site, whatsappLink } from '../config/site';
+import { localePath, t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  design: Design;
+}
+
+const { lang, design: d } = Astro.props;
+const s = t(lang);
+const ds = s.designs;
+const cat = categoryById(d.category_id)!;
+const parent = categoryById(cat.parent_id);
+const name = designName(d, lang);
+const pageUrl = new URL(designUrl(lang, d.code), site.url).toString();
+const waText = `${s.waGreeting}\n${ds.wa(d.code, name, pageUrl)}`;
+
+// Same subcategory first, then the rest of the parent category, then newest.
+const similar = [...designsIn(cat.id), ...(parent ? designsIn(parent.id) : []), ...designs]
+  .filter((x, i, all) => x.code !== d.code && all.findIndex((y) => y.code === x.code) === i)
+  .slice(0, 8);
+
+const product = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: `${name} (${d.code})`,
+  sku: d.code,
+  image: d.images,
+  description: d.description || `${categoryName(cat, 'en')} embroidery design ${d.code}`,
+  brand: { '@type': 'Brand', name: site.name },
+  category: parent ? `${parent.name_en} > ${cat.name_en}` : cat.name_en,
+  ...(d.price != null && d.price_type !== 'ask'
+    ? {
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'INR',
+          price: d.price,
+          availability: d.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          url: pageUrl,
+        },
+      }
+    : {}),
+};
+---
+
+<Base
+  lang={lang}
+  title={`${name} – ${d.code}`}
+  description={`${name} (${d.code}) · ${priceLabel(d, lang)}. ${d.description ?? ''}`.trim()}
+  path={`/design/${d.code.toLowerCase()}`}
+  image={d.images[0]}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(product)} />
+  <section class="section section--tight">
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href={localePath(lang, '/designs')}>{s.nav.designs}</a>
+        {parent && <>{' › '}<a href={categoryUrl(lang, parent.slug)}>{categoryName(parent, lang)}</a></>}
+        {' › '}<a href={categoryUrl(lang, cat.slug)}>{categoryName(cat, lang)}</a>
+      </nav>
+
+      <div class="design">
+        <div class="design__media">
+          <div class="photos" tabindex="0" aria-label={name}>
+            {
+              d.images.map((src, i) => (
+                <button type="button" class="photos__item" data-full={sizedImage(src, 1400)} aria-label={ds.photo(i + 1, d.images.length)}>
+                  <img
+                    src={sizedImage(src, 900)}
+                    alt={`${name} – ${d.code} (${i + 1})`}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    width="900"
+                    height="1125"
+                  />
+                </button>
+              ))
+            }
+          </div>
+          {
+            d.images.length > 1 && (
+              <div class="thumbs">
+                {d.images.map((src, i) => (
+                  <button type="button" data-go={i} aria-label={ds.photo(i + 1, d.images.length)} aria-current={i === 0 ? 'true' : undefined}>
+                    <img src={sizedImage(src, 160)} alt="" loading="lazy" width="64" height="80" />
+                  </button>
+                ))}
+              </div>
+            )
+          }
+          {d.video && <video class="design__video" src={d.video} controls playsinline preload="metadata" />}
+        </div>
+
+        <div class="design__info">
+          <p class="design__code">{ds.code}: <strong>{d.code}</strong></p>
+          <h1>{name}</h1>
+          <p class="design__price">{priceLabel(d, lang)}</p>
+          {d.price_type !== 'ask' && <p class="design__note">{ds.priceNote}</p>}
+          {!d.available && <p class="design__off">{ds.unavailable}</p>}
+
+          <div class="btn-row">
+            <a class="btn btn--whatsapp" href={whatsappLink(waText)} data-wa={`design:${d.code}`} rel="noopener">{ds.enquire}</a>
+            <button type="button" class="btn btn--ghost" data-share={pageUrl} data-copied={ds.copied}>{ds.share}</button>
+          </div>
+
+          {d.description && <p class="design__desc">{d.description}</p>}
+
+          <dl class="design__facts">
+            <dt>{ds.category}</dt>
+            <dd><a href={categoryUrl(lang, cat.slug)}>{parent ? `${categoryName(parent, lang)} › ` : ''}{categoryName(cat, lang)}</a></dd>
+            {d.tags.length > 0 && (<><dt>{ds.workTypes}</dt><dd>{d.tags.map((x) => tagLabel(x, lang)).join(', ')}</dd></>)}
+            {d.delivery && (<><dt>{ds.delivery}</dt><dd>{d.delivery}</dd></>)}
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    similar.length > 0 && (
+      <section class="section section--tint">
+        <div class="container">
+          <h2>{ds.similar}</h2>
+          <ul class="similar">
+            {similar.map((x) => <DesignCard lang={lang} design={x} />)}
+          </ul>
+          <p class="more"><a class="btn btn--ghost" href={localePath(lang, '/designs')}>{ds.viewAll} →</a></p>
+        </div>
+      </section>
+    )
+  }
+
+  <dialog class="lightbox" aria-label={name}>
+    <img alt="" />
+    <button type="button" class="lightbox__close" aria-label={ds.close}>✕</button>
+    <button type="button" class="lightbox__nav" data-step="-1" aria-label={ds.prev}>‹</button>
+    <button type="button" class="lightbox__nav lightbox__nav--next" data-step="1" aria-label={ds.next}>›</button>
+  </dialog>
+</Base>
+
+<style>
+  .section--tight { padding-top: clamp(20px, 4vw, 40px); }
+  .crumbs { font-size: 0.95rem; color: var(--ink-soft); margin-bottom: 14px; }
+  .design { display: grid; gap: 28px; }
+  @media (min-width: 860px) {
+    .design { grid-template-columns: 1.1fr 1fr; align-items: start; }
+    .design__info { position: sticky; top: 90px; }
+  }
+  .photos {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; border-radius: var(--radius);
+    background: var(--lavender); scrollbar-width: none;
+  }
+  .photos::-webkit-scrollbar { display: none; }
+  .photos__item { flex: 0 0 100%; scroll-snap-align: center; padding: 0; border: 0; background: none; cursor: zoom-in; }
+  .photos__item img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+  .thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+  .thumbs button { flex: none; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: none; cursor: pointer; }
+  .thumbs button[aria-current='true'] { border-color: var(--accent); }
+  .thumbs img { width: 64px; height: 80px; object-fit: cover; }
+  .design__video { width: 100%; margin-top: 12px; border-radius: var(--radius); background: #000; }
+  .design__code { margin: 0 0 4px; color: var(--ink-soft); letter-spacing: 0.03em; }
+  .design__code strong { color: var(--accent); font-size: 1.15rem; }
+  .design__info h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin-bottom: 8px; }
+  .design__price { font-size: 1.6rem; font-weight: 700; margin: 0; }
+  .design__note { font-size: 0.9rem; color: var(--ink-soft); margin: 2px 0 0; }
+  .design__off { display: inline-block; margin: 10px 0 0; padding: 2px 12px; border-radius: 999px; background: #fff4d6; color: #8a5a00; font-weight: 600; }
+  .design__info .btn-row { margin: 20px 0; }
+  .design__desc { white-space: pre-line; }
+  .design__facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; }
+  .design__facts dt { font-weight: 600; color: var(--ink-soft); }
+  .design__facts dd { margin: 0; }
+  .similar {
+    list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr));
+  }
+  .more { margin-top: 24px; }
+  .lightbox { padding: 0; border: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; }
+  .lightbox::backdrop { background: rgb(10 10 30 / 0.92); }
+  .lightbox img { width: 100%; height: 100%; object-fit: contain; }
+  .lightbox button {
+    position: fixed; border: 0; border-radius: 50%; width: 48px; height: 48px; font-size: 1.6rem;
+    background: rgb(255 255 255 / 0.15); color: #fff; cursor: pointer;
+  }
+  .lightbox__close { top: 16px; right: 16px; }
+  .lightbox__nav { top: 50%; left: 12px; translate: 0 -50%; }
+  .lightbox__nav--next { left: auto; right: 12px; }
+</style>
+
+<script>
+  const photos = document.querySelector<HTMLElement>('.photos');
+  const items = [...document.querySelectorAll<HTMLButtonElement>('.photos__item')];
+  const thumbs = [...document.querySelectorAll<HTMLButtonElement>('.thumbs button')];
+  const box = document.querySelector<HTMLDialogElement>('.lightbox')!;
+  const boxImg = box.querySelector('img')!;
+  let current = 0;
+
+  const show = (i: number) => photos?.scrollTo({ left: photos.clientWidth * i, behavior: 'smooth' });
+  thumbs.forEach((b) => b.addEventListener('click', () => show(Number(b.dataset.go))));
+  photos?.addEventListener('scroll', () => {
+    const i = Math.round(photos.scrollLeft / photos.clientWidth);
+    thumbs.forEach((b, j) => (j === i ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+  });
+
+  const open = (i: number) => {
+    current = (i + items.length) % items.length;
+    boxImg.src = items[current].dataset.full!;
+    if (!box.open) box.showModal();
+  };
+  items.forEach((b, i) => b.addEventListener('click', () => open(i)));
+  box.querySelector('.lightbox__close')!.addEventListener('click', () => box.close());
+  box.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => {
+    b.hidden = items.length < 2;
+    b.addEventListener('click', () => open(current + Number(b.dataset.step)));
+  });
+  box.addEventListener('click', (e) => e.target === box && box.close());
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') open(current + 1);
+    if (e.key === 'ArrowLeft') open(current - 1);
+  });
+
+  document.querySelector<HTMLButtonElement>('[data-share]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const url = btn.dataset.share!;
+    if (navigator.share) {
+      await navigator.share({ title: document.title, url }).catch(() => {});
+    } else {
+      await navigator.clipboard?.writeText(url);
+      const label = btn.textContent;
+      btn.textContent = btn.dataset.copied!;
+      setTimeout(() => (btn.textContent = label), 2000);
+    }
+  });
+</script>

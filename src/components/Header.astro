@@ -12,7 +12,7 @@ const s = t(lang);
 const otherLang: Lang = lang === 'en' ? 'ta' : 'en';
 const links = [
   { href: '/', label: s.nav.home },
-  { href: '/gallery', label: s.nav.gallery },
+  { href: '/designs', label: s.nav.designs },
   { href: '/services', label: s.nav.services },
   { href: '/about', label: s.nav.about },
   { href: '/contact', label: s.nav.contact },
@@ -34,7 +34,7 @@ const links = [
           {
             links.map((l) => (
               <li>
-                <a href={localePath(lang, l.href)} aria-current={l.href === path ? 'page' : undefined}>
+                <a href={localePath(lang, l.href)} aria-current={l.href === path || (l.href !== '/' && path.startsWith(`${l.href}/`)) || (l.href === '/designs' && path.startsWith('/design/')) ? 'page' : undefined}>
                   {l.label}
                 </a>
               </li>

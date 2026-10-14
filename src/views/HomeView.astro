@@ -1,9 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
-import GalleryGrid from '../components/GalleryGrid.astro';
+import DesignCard from '../components/DesignCard.astro';
 import ServicesList from '../components/ServicesList.astro';
 import Reviews from '../components/Reviews.astro';
-import { gallery } from '../lib/gallery';
+import { designs } from '../lib/designs';
 import { whatsappLink } from '../config/site';
 import { localePath, t, type Lang } from '../i18n/strings';
 import { getServices } from '../lib/services';
@@ -15,7 +15,8 @@ interface Props {
 const { lang } = Astro.props;
 const s = t(lang);
 const services = await getServices();
-const featured = gallery.filter((g) => g.featured).slice(0, 4);
+// Featured designs first, topped up with the newest ones.
+const featured = [...designs.filter((d) => d.featured), ...designs.filter((d) => !d.featured)].slice(0, 8);
 ---
 
 <Base lang={lang} title={lang === 'ta' ? 'பாவை எம்ப்ராய்டரி — மணப்பெண் ஆரி & டிசைனர் எம்ப்ராய்டரி' : 'Paavai Embroidery — Bridal aari & designer embroidery'} description={s.heroText} path="/">
@@ -27,7 +28,7 @@ const featured = gallery.filter((g) => g.featured).slice(0, 4);
         <p class="hero__text">{s.heroText}</p>
         <div class="btn-row">
           <a class="btn btn--whatsapp" href={whatsappLink(s.waGreeting)} data-wa="hero" rel="noopener">{s.ctaWhatsapp}</a>
-          <a class="btn btn--ghost" href={localePath(lang, '/gallery')}>{s.ctaGallery}</a>
+          <a class="btn btn--ghost" href={localePath(lang, '/designs')}>{s.ctaGallery}</a>
         </div>
       </div>
       <div class="hero__art" aria-hidden="true">
@@ -36,13 +37,17 @@ const featured = gallery.filter((g) => g.featured).slice(0, 4);
     </div>
   </section>
 
-  <section class="section">
-    <div class="container">
-      <h2>{s.featuredTitle}</h2>
-      <GalleryGrid lang={lang} items={featured} />
-      <p class="more"><a class="btn btn--ghost" href={localePath(lang, '/gallery')}>{s.ctaGallery} →</a></p>
-    </div>
-  </section>
+  {featured.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <h2>{s.featuredTitle}</h2>
+        <ul class="featured">
+          {featured.map((d) => <DesignCard lang={lang} design={d} />)}
+        </ul>
+        <p class="more"><a class="btn btn--ghost" href={localePath(lang, '/designs')}>{s.ctaGallery} →</a></p>
+      </div>
+    </section>
+  )}
 
   <section class="section section--tint">
     <div class="container">
@@ -119,6 +124,14 @@ const featured = gallery.filter((g) => g.featured).slice(0, 4);
   }
   .more {
     margin-top: 24px;
+  }
+  .featured {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(min(46%, 210px), 1fr));
   }
   .cta__row {
     justify-content: center;

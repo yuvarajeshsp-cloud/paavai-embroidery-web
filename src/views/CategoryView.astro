@@ -1,0 +1,87 @@
+---
+import Base from '../layouts/Base.astro';
+import DesignBrowser from '../components/DesignBrowser.astro';
+import { categoryById, categoryName, categoryUrl, designsIn, subcategories, type Category } from '../lib/designs';
+import { localePath, t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  category: Category;
+}
+
+const { lang, category } = Astro.props;
+const s = t(lang);
+const parent = categoryById(category.parent_id);
+const name = categoryName(category, lang);
+const list = designsIn(category.id);
+// Subcategories of a top-level category become filter chips; on a
+// subcategory page its siblings are shown as links.
+const subs = subcategories(category.id);
+const siblings = parent ? subcategories(parent.id).filter((c) => designsIn(c.id).length > 0) : [];
+const title = parent ? `${name} – ${categoryName(parent, lang)}` : name;
+const description = `${title}: ${s.designs.count(list.length)}. ${s.designs.intro}`;
+---
+
+<Base lang={lang} title={title} description={description} path={`/designs/${category.slug}`} image={category.cover_image || list[0]?.images[0]}>
+  <section class="section section--tight">
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href={localePath(lang, '/designs')}>{s.nav.designs}</a>
+        {parent && (
+          <>
+            {' › '}
+            <a href={categoryUrl(lang, parent.slug)}>{categoryName(parent, lang)}</a>
+          </>
+        )}
+      </nav>
+      <h1>{name}</h1>
+      {
+        siblings.length > 1 && (
+          <ul class="siblings">
+            {siblings.map((c) => (
+              <li>
+                <a href={categoryUrl(lang, c.slug)} aria-current={c.id === category.id ? 'page' : undefined}>
+                  {categoryName(c, lang)}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      <DesignBrowser lang={lang} designs={list} chips={subs} />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .section--tight {
+    padding-top: clamp(24px, 4vw, 48px);
+  }
+  .crumbs {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .siblings {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .siblings a {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--periwinkle);
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .siblings a[aria-current='page'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+</style>

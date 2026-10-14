@@ -2,10 +2,11 @@
 // Commerce Manager -> Catalog -> Data sources -> Data feed -> scheduled feed
 // URL: https://paavaifashions.com/catalog.xml (refresh daily).
 // Meta needs a JPG/PNG image (min 500x500) for every item: services without
-// an image fall back to the matching gallery photo, then the default one.
+// an image fall back to a design photo from a category of the same name,
+// then the default one.
 import type { APIRoute } from 'astro';
 import { site } from '../config/site';
-import { gallery, itemImage } from '../lib/gallery';
+import { categories, designsIn } from '../lib/designs';
 import { getServices, serviceSlug, type Service } from '../lib/services';
 
 const esc = (s: string) =>
@@ -14,9 +15,7 @@ const esc = (s: string) =>
 function imageFor(svc: Service): string {
   const src =
     svc.image ||
-    gallery
-      .map((g) => ({ category: g.category, src: itemImage(g) }))
-      .find((g) => g.src && !g.src.endsWith('.svg') && g.category.toLowerCase() === svc.category.toLowerCase())?.src ||
+    designsIn(categories.find((c) => c.name_en.toLowerCase() === svc.category.toLowerCase())?.id ?? '')[0]?.images[0] ||
     '/images/catalog-default.jpg';
   return new URL(src, site.url).toString();
 }
