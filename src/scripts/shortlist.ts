@@ -3,6 +3,7 @@
 // [data-shortlist-count] shows how many are saved; [data-shortlist-float]
 // appears once something is saved.
 import { sendServerEvent, trackEvent } from './tracking';
+import { countDesign } from './stats';
 
 const KEY = 'paavai-shortlist';
 const MAX = 60;
@@ -30,6 +31,7 @@ export function addToShortlist(codes: string[]) {
   const list = getShortlist();
   const added = codes.map((c) => c.toUpperCase()).filter((c) => !list.includes(c));
   setShortlist([...list, ...added]);
+  added.forEach((c) => countDesign(c, 'shortlist'));
   if (added.length) {
     const product = { content_ids: added, content_type: 'product' as const };
     sendServerEvent('AddToWishlist', trackEvent('AddToWishlist', product), product);

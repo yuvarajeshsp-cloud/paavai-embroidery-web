@@ -212,6 +212,7 @@ const product = {
 
 <script>
   import { sendServerEvent, trackEvent } from '../scripts/tracking';
+  import { countDesign } from '../scripts/stats';
 
   // "ViewContent" with the design code, matching the id in /catalog.xml.
   const viewed = document.querySelector<HTMLElement>('[data-view-content]');
@@ -222,6 +223,7 @@ const product = {
       ...(viewed.dataset.value ? { value: Number(viewed.dataset.value), currency: 'INR' as const } : {}),
     };
     sendServerEvent('ViewContent', trackEvent('ViewContent', product), product);
+    countDesign(viewed.dataset.viewContent!, 'view');
   }
 
   const photos = document.querySelector<HTMLElement>('.photos');

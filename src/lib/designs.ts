@@ -3,6 +3,7 @@
 import { content } from './content';
 import { localePath, type Lang } from '../i18n/strings';
 import { WORK_TYPES } from './work-types';
+import { priceLabel, type PriceType } from './price';
 
 export { WORK_TYPES };
 
@@ -16,7 +17,8 @@ export type Category = {
   position: number;
 };
 
-export type PriceType = 'fixed' | 'from' | 'range' | 'ask';
+
+export type { PriceType };
 
 export type Design = {
   code: string;
@@ -39,6 +41,14 @@ const num = (v: unknown) => (v == null || v === '' ? null : Number(v));
 
 export const categories = (content.categories as Category[]).sort((a, b) => a.position - b.position);
 export const designs = (content.designs as Design[]).map((d) => ({ ...d, price: num(d.price), price_max: num(d.price_max) }));
+
+// Popularity over the last 60 days (views + 5 × ♡ + 10 × WhatsApp enquiries),
+// from the anonymous counters. The top designs get a "Popular" badge.
+const popular = content.popular as Record<string, number>;
+export const popularity = (code: string) => popular[code] ?? 0;
+const ranked = Object.entries(popular).sort((a, b) => b[1] - a[1]);
+const popularCodes = new Set(ranked.slice(0, Math.max(3, Math.ceil(designs.length / 10))).filter(([, n]) => n >= 10).map(([c]) => c));
+export const isPopular = (code: string) => popularCodes.has(code);
 
 const byId = new Map(categories.map((c) => [c.id, c]));
 export const categoryById = (id: string | null) => (id ? byId.get(id) : undefined);
@@ -67,16 +77,7 @@ export const categoryUrl = (lang: Lang, slug: string) => localePath(lang, `/desi
 
 export const designName = (d: Design, lang: Lang) => d.title || categoryName(categoryById(d.category_id)!, lang);
 
-const inr = (n: number) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
-
-export function priceLabel(d: Design, lang: Lang): string {
-  const ta = lang === 'ta';
-  if (d.price_type === 'ask' || d.price == null) return ta ? 'விலைக்கு கேளுங்கள்' : 'Price on request';
-  if (d.price_type === 'from') return ta ? `${inr(d.price)} முதல்` : `From ${inr(d.price)}`;
-  if (d.price_type === 'range' && d.price_max != null && d.price_max > d.price) return `${inr(d.price)} – ${inr(d.price_max)}`;
-  return inr(d.price);
-}
+export { priceLabel };
 
 /** Lowest and highest price, for filtering ("ask" designs have none). */
 export function priceBounds(d: Design): [number, number] | null {

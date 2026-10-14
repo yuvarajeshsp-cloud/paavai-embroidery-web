@@ -163,6 +163,7 @@ const strings = {
     const intro = (list.length === 1 ? str.waIntroOne : str.waIntro.replace('999', String(list.length))) as string;
     const text = [str.greeting, intro, ...lines, '', `${str.waLink} ${linkFor(list)}`].join('\n');
     $('[data-send]').setAttribute('href', `https://wa.me/${root.dataset.wa}?text=${encodeURIComponent(text)}`);
+    $('[data-send]').dataset.codes = list.join(',');
   }
 
   $('[data-share]').addEventListener('click', async (e) => {

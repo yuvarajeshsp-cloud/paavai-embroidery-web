@@ -6,6 +6,8 @@ import {
   designName,
   designUrl,
   isNew,
+  isPopular,
+  popularity,
   priceBounds,
   priceLabel,
   tagLabel,
@@ -41,6 +43,7 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
   data-tags={d.tags.join(' ')}
   data-search={search}
   data-index={index}
+  data-pop={popularity(d.code)}
 >
   <a href={designUrl(lang, d.code)}>
     <div class="dcard__img">
@@ -52,7 +55,7 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
         width="480"
         height="600"
       />
-      {isNew(d) && <span class="dcard__badge">{s.isNew}</span>}
+      {isPopular(d.code) ? <span class="dcard__badge dcard__badge--pop">{s.popular}</span> : isNew(d) && <span class="dcard__badge">{s.isNew}</span>}
       {!d.available && <span class="dcard__badge dcard__badge--off">{s.unavailable}</span>}
     </div>
     <div class="dcard__body">
@@ -108,6 +111,9 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
     border-radius: 999px;
     background: var(--accent);
     color: #fff;
+  }
+  .dcard__badge--pop {
+    background: #c2410c;
   }
   .dcard__badge--off {
     top: auto;

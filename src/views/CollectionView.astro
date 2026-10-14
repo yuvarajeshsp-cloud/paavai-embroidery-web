@@ -1,0 +1,310 @@
+---
+// Private collection for one customer: /c/<token> (Netlify serves this page
+// for any /c/* path). The designs are loaded live from Supabase with
+// view_collection(), so new or exclusive designs show up without publishing.
+// "?preview=1" (the admin's preview link) doesn't count as the customer
+// opening it.
+import Base from '../layouts/Base.astro';
+import { site } from '../config/site';
+import { SUPABASE_KEY, SUPABASE_URL } from '../config/supabase';
+import { t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+const c = s.collection;
+const strings = {
+  title: c.title,
+  forName: c.forName('{n}'),
+  like: c.like,
+  liked: c.liked,
+  details: c.details,
+  exclusive: c.exclusive,
+  viewPage: c.viewPage,
+  ask: c.ask,
+  send0: c.send(0),
+  sendN: c.send(999),
+  waAbout: c.waAbout('{t}', '{u}'),
+  waLiked: c.waLiked,
+  waQuestion: c.waQuestion,
+  waOne: c.waOne('{c}'),
+  greeting: s.waGreeting,
+  validUntil: c.validUntil('{d}'),
+  unavailable: s.designs.unavailable,
+  photo: s.designs.photo(1, 1),
+  close: s.designs.close,
+  delivery: s.designs.delivery,
+  work: s.designs.workTypes,
+  expired: c.expired,
+  invalid: c.invalid,
+};
+---
+
+<Base lang={lang} title={c.title} description={c.intro} path="/c" noindex>
+  <section class="section section--tight">
+    <div
+      class="container coll"
+      data-lang={lang}
+      data-wa={site.whatsapp}
+      data-api={SUPABASE_URL}
+      data-key={SUPABASE_KEY}
+      data-strings={JSON.stringify(strings)}
+    >
+      <p class="coll__for" data-for hidden></p>
+      <h1 data-title>{c.title}</h1>
+      <p class="coll__note" data-note hidden></p>
+      <p class="section__intro" data-intro hidden>{c.intro}</p>
+      <p class="muted" data-status>{c.loading}</p>
+      <ul class="coll__grid" data-grid></ul>
+      <p class="muted small" data-valid hidden></p>
+    </div>
+  </section>
+
+  <div class="coll__bar" data-bar hidden>
+    <a class="btn btn--whatsapp" data-send data-wa="collection" rel="noopener" href="#"></a>
+  </div>
+
+  <dialog class="coll__dialog" data-dialog>
+    <button type="button" class="coll__close" data-close aria-label={s.designs.close}>✕</button>
+    <div data-detail></div>
+  </dialog>
+</Base>
+
+<style>
+  .section--tight { padding-top: clamp(24px, 4vw, 48px); padding-bottom: 120px; }
+  /* This page has its own WhatsApp bar. */
+  :global(.wa-float), :global(.sl-float) { display: none !important; }
+  .muted { color: var(--ink-soft); }
+  .small { font-size: 0.9rem; }
+  .coll__for { margin: 0 0 4px; font-weight: 700; color: var(--accent); letter-spacing: 0.03em; }
+  .coll__note { white-space: pre-line; background: #fff; border-left: 4px solid var(--periwinkle); padding: 12px 16px; border-radius: 8px; }
+  .coll__grid {
+    list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(min(46%, 220px), 1fr));
+  }
+  .coll__bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgb(246 246 255 / 0.96); border-top: 1px solid var(--border); display: flex; justify-content: center;
+  }
+  .coll__bar .btn { width: min(100%, 420px); }
+  .coll__dialog {
+    border: 0; border-radius: var(--radius); padding: 0; width: min(640px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px); box-shadow: var(--shadow);
+  }
+  .coll__dialog::backdrop { background: rgb(35 34 79 / 0.6); }
+  .coll__close {
+    position: sticky; top: 10px; float: right; margin: 10px 10px 0 0; z-index: 2; width: 40px; height: 40px;
+    border-radius: 50%; border: 0; background: rgb(255 255 255 / 0.92); box-shadow: var(--shadow); font-size: 1.1rem; cursor: pointer;
+  }
+  .coll :global(.ccard) {
+    position: relative; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .coll :global(.ccard__open) { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+  .coll :global(.ccard img) { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--lavender); display: block; }
+  .coll :global(.ccard__body) { padding: 10px 12px 4px; display: grid; gap: 2px; }
+  .coll :global(.ccard__code) { font-size: 0.78rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; }
+  .coll :global(.ccard__name) { font-weight: 600; line-height: 1.3; }
+  .coll :global(.ccard__price) { font-weight: 700; }
+  .coll :global(.ccard__tag) {
+    position: absolute; top: 8px; left: 8px; font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+    background: var(--accent); color: #fff;
+  }
+  .coll :global(.ccard__off) { font-size: 0.85rem; color: #8a5a00; }
+  .coll :global(.ccard__like) {
+    margin: 8px 12px 12px; font: inherit; font-weight: 600; min-height: 40px; border-radius: 999px; cursor: pointer;
+    border: 2px solid #d6336c; background: #fff; color: #d6336c;
+  }
+  .coll :global(.ccard__like[aria-pressed='true']) { background: #d6336c; color: #fff; }
+  :global(.cdetail) { padding: 0 16px 20px; }
+  :global(.cdetail img) { width: 100%; border-radius: 10px; margin-top: 10px; background: var(--lavender); }
+  :global(.cdetail video) { width: 100%; border-radius: 10px; margin-top: 10px; background: #000; }
+  :global(.cdetail h2) { margin: 14px 0 4px; font-size: 1.5rem; }
+  :global(.cdetail p) { margin: 4px 0; }
+  :global(.cdetail .btn-row) { margin-top: 16px; }
+</style>
+
+<script>
+  import { priceLabel, type PriceType } from '../lib/price';
+  import { countDesign } from '../scripts/stats';
+  import { WORK_TYPES } from '../lib/work-types';
+
+  type D = {
+    code: string; title: string | null; description: string | null; price_type: PriceType; price: number | null;
+    price_max: number | null; images: string[]; video: string | null; tags: string[]; delivery: string | null;
+    available: boolean; public: boolean; category_en: string; category_ta: string | null; parent_en: string | null; parent_ta: string | null;
+  };
+
+  const root = document.querySelector<HTMLElement>('.coll')!;
+  const lang = root.dataset.lang as 'en' | 'ta';
+  const str = JSON.parse(root.dataset.strings!);
+  const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+  const params = new URLSearchParams(location.search);
+  const token = (location.pathname.match(/\/c\/([\w-]+)/)?.[1] ?? params.get('k') ?? '').trim();
+  const likeKey = `paavai-collection:${token}`;
+  const pageUrl = `${location.origin}${lang === 'ta' ? '/ta' : ''}/c/${token}`;
+  // Keep the link's code when switching language.
+  document.querySelector<HTMLAnchorElement>('.header__lang')?.setAttribute('href', `${lang === 'en' ? '/ta' : ''}/c/${token}`);
+
+  let designs: D[] = [];
+  let title = str.title;
+  let liked = new Set<string>();
+  try {
+    liked = new Set(JSON.parse(localStorage.getItem(likeKey) || '[]'));
+  } catch { /* none */ }
+
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Record<string, unknown> = {}, ...kids: (Node | string | null)[]) => {
+    const n = document.createElement(tag);
+    Object.assign(n, props);
+    kids.forEach((k) => k && n.append(k));
+    return n;
+  };
+  const nameOf = (d: D) => d.title || (lang === 'ta' && d.category_ta) || d.category_en;
+  const catOf = (d: D) => {
+    const cat = (lang === 'ta' && d.category_ta) || d.category_en;
+    const par = d.parent_en ? (lang === 'ta' && d.parent_ta) || d.parent_en : null;
+    return par ? `${par} › ${cat}` : cat;
+  };
+  const wa = (lines: string[]) => `https://wa.me/${root.dataset.wa}?text=${encodeURIComponent([str.greeting, ...lines].join('\n'))}`;
+
+  function saveLikes() {
+    try {
+      localStorage.setItem(likeKey, JSON.stringify([...liked]));
+    } catch { /* private mode */ }
+  }
+
+  function renderBar() {
+    const codes = designs.map((d) => d.code).filter((c) => liked.has(c));
+    const about = str.waAbout.replace('{t}', title).replace('{u}', pageUrl);
+    const lines = codes.length ? [about, str.waLiked, ...codes.map((c) => `• ${c}`)] : [about, str.waQuestion];
+    const a = $<HTMLAnchorElement>('[data-send]');
+    a.href = wa(lines);
+    a.dataset.codes = codes.join(',');
+    a.textContent = codes.length ? str.sendN.replace('999', String(codes.length)) : str.send0;
+  }
+
+  function likeButton(d: D) {
+    const b = el('button', { type: 'button', className: 'ccard__like' });
+    const sync = () => {
+      const on = liked.has(d.code);
+      b.setAttribute('aria-pressed', String(on));
+      b.textContent = `${on ? '♥' : '♡'} ${on ? str.liked : str.like}`;
+    };
+    b.addEventListener('click', () => {
+      if (liked.has(d.code)) liked.delete(d.code);
+      else {
+        liked.add(d.code);
+        countDesign(d.code, 'shortlist');
+      }
+      saveLikes();
+      document.querySelectorAll<HTMLButtonElement>(`[data-like="${d.code}"]`).forEach((x) => x.dispatchEvent(new Event('sync')));
+      renderBar();
+    });
+    b.dataset.like = d.code;
+    b.addEventListener('sync', sync);
+    sync();
+    return b;
+  }
+
+  function openDetail(d: D) {
+    countDesign(d.code, 'view');
+    const box = $('[data-detail]');
+    const facts = [
+      el('p', { className: 'muted' }, catOf(d)),
+      d.tags.length ? el('p', {}, `${str.work}: ${d.tags.map((t) => WORK_TYPES[t]?.[lang] ?? t).join(', ')}`) : null,
+      d.delivery ? el('p', {}, `${str.delivery}: ${d.delivery}`) : null,
+      d.description ? el('p', { style: 'white-space:pre-line' }, d.description) : null,
+    ];
+    const ask = el('a', { className: 'btn btn--whatsapp', rel: 'noopener', href: wa([str.waOne.replace('{c}', d.code), pageUrl]) }, str.ask);
+    ask.dataset.wa = `design:${d.code}`;
+    box.replaceChildren(
+      el(
+        'div',
+        { className: 'cdetail' },
+        ...d.images.map((src, i) => el('img', { src, alt: `${nameOf(d)} – ${d.code} (${i + 1})`, loading: i ? 'lazy' : 'eager' })),
+        d.video ? el('video', { src: d.video, controls: true, playsInline: true, preload: 'metadata' }) : null,
+        el('p', { className: 'ccard__code' }, d.code),
+        el('h2', {}, nameOf(d)),
+        el('p', { className: 'ccard__price' }, priceLabel(d, lang)),
+        !d.available ? el('p', { className: 'ccard__off' }, str.unavailable) : null,
+        ...facts,
+        el(
+          'div',
+          { className: 'btn-row' },
+          ask,
+          likeButton(d),
+          d.public ? el('a', { className: 'btn btn--ghost', href: `${lang === 'ta' ? '/ta' : ''}/design/${d.code.toLowerCase()}` }, str.viewPage) : null,
+        ),
+      ),
+    );
+    $<HTMLDialogElement>('[data-dialog]').showModal();
+  }
+
+  function render(data: { title: string; customer_name: string | null; note: string | null; expires_at: string | null; designs: D[] }) {
+    designs = data.designs;
+    title = data.title || str.title;
+    document.title = title;
+    $('[data-title]').textContent = title;
+    if (data.customer_name) {
+      $('[data-for]').textContent = str.forName.replace('{n}', data.customer_name);
+      $('[data-for]').hidden = false;
+    }
+    if (data.note) {
+      $('[data-note]').textContent = data.note;
+      $('[data-note]').hidden = false;
+    }
+    if (data.expires_at) {
+      $('[data-valid]').textContent = str.validUntil.replace('{d}', new Date(data.expires_at).toLocaleDateString(lang === 'ta' ? 'ta-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' }));
+      $('[data-valid]').hidden = false;
+    }
+    $('[data-intro]').hidden = false;
+    $('[data-status]').hidden = true;
+    $('[data-grid]').replaceChildren(
+      ...designs.map((d) => {
+        const open = el(
+          'button',
+          { type: 'button', className: 'ccard__open', ariaLabel: `${str.details}: ${d.code}` },
+          el('img', { src: d.images[0], alt: `${nameOf(d)} – ${d.code}`, loading: 'lazy' }),
+          el(
+            'div',
+            { className: 'ccard__body' },
+            el('span', { className: 'ccard__code' }, d.code),
+            el('span', { className: 'ccard__name' }, nameOf(d)),
+            el('span', { className: 'ccard__price' }, priceLabel(d, lang)),
+            !d.available ? el('span', { className: 'ccard__off' }, str.unavailable) : null,
+          ),
+        );
+        open.addEventListener('click', () => openDetail(d));
+        return el('li', { className: 'ccard' }, open, d.public ? null : el('span', { className: 'ccard__tag' }, str.exclusive), likeButton(d));
+      }),
+    );
+    $('[data-bar]').hidden = false;
+    renderBar();
+  }
+
+  function fail(message: string) {
+    $('[data-status]').textContent = message;
+    $('[data-bar]').hidden = false;
+    const a = $<HTMLAnchorElement>('[data-send]');
+    a.href = wa([]);
+    a.textContent = str.send0;
+  }
+
+  $('[data-close]').addEventListener('click', () => $<HTMLDialogElement>('[data-dialog]').close());
+  $('[data-dialog]').addEventListener('click', (e) => e.target === e.currentTarget && $<HTMLDialogElement>('[data-dialog]').close());
+
+  if (!token) fail(str.invalid);
+  else {
+    fetch(`${root.dataset.api}/rest/v1/rpc/view_collection`, {
+      method: 'POST',
+      headers: { apikey: root.dataset.key!, Authorization: `Bearer ${root.dataset.key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_token: token, p_count: params.get('preview') !== '1' }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => (data.found ? render(data) : fail(data.expired ? str.expired : str.invalid)))
+      .catch(() => fail(str.invalid));
+  }
+</script>

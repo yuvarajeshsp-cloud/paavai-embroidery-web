@@ -53,6 +53,8 @@ import '../styles/global.css';
         <nav class="adm__tabs" role="tablist">
           <button type="button" role="tab" data-tab="design" aria-selected="true">Designs</button>
           <button type="button" role="tab" data-tab="category" aria-selected="false">Categories</button>
+          <button type="button" role="tab" data-tab="collection" aria-selected="false">Client links</button>
+          <button type="button" role="tab" data-tab="insights" aria-selected="false">Insights</button>
           <button type="button" role="tab" data-tab="review" aria-selected="false">Reviews</button>
           <button type="button" role="tab" data-tab="service" aria-selected="false">Services &amp; prices</button>
           <button type="button" role="tab" data-tab="settings" aria-selected="false">Shop details &amp; links</button>
@@ -85,6 +87,34 @@ import '../styles/global.css';
           <div class="adm__toolbar"><button type="button" class="btn btn--primary" data-add="category">+ Add category</button></div>
           <p class="muted small">Categories can have one level of subcategories (e.g. Blouse › Back neck). A category that still has designs or subcategories can't be deleted; hide it instead.</p>
           <ul class="adm__rows" id="list-category"></ul>
+        </div>
+
+        <div data-panel="collection" hidden>
+          <div class="adm__toolbar"><button type="button" class="btn btn--primary" data-add="collection">+ New client link</button></div>
+          <p class="muted small">Pick designs for one customer (e.g. “Bridal options for Priya”) and send them a private link. You can include hidden designs that are not on the public site. The page always shows the latest photos and prices — no need to publish. You can see when the customer opened it.</p>
+          <ul class="adm__rows" id="list-collection"></ul>
+        </div>
+
+        <div data-panel="insights" hidden>
+          <div class="adm__filters adm__filters--short">
+            <select id="i-days" aria-label="Period">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+            <select id="i-sort" aria-label="Sort by">
+              <option value="views">Most viewed</option>
+              <option value="shortlists">Most ♡ shortlisted</option>
+              <option value="enquiries">Most WhatsApp enquiries</option>
+            </select>
+          </div>
+          <div class="adm__stats" id="i-totals"></div>
+          <h2 class="adm__h">Top designs</h2>
+          <ul class="adm__rows" id="i-top"></ul>
+          <h2 class="adm__h">By category</h2>
+          <ul class="adm__rows" id="i-cats"></ul>
+          <p class="muted small" id="i-quiet"></p>
+          <p class="muted small">Counts are anonymous (design code and number only) and include visits from all customers. A design page opened several times in one visit counts once.</p>
         </div>
 
         <div data-panel="review" hidden>
@@ -164,6 +194,23 @@ import '../styles/global.css';
   .adm__filters { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin: 12px 0 4px; }
   .adm__filters input { grid-column: 1 / -1; }
   @media (min-width: 760px) { .adm__filters { grid-template-columns: 2fr 1.4fr 1fr; } .adm__filters input { grid-column: auto; } }
+  .adm__filters--short { grid-template-columns: 1fr 1fr; max-width: 520px; }
+  .adm__filters--short input { grid-column: auto; }
+  .adm__stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin: 12px 0 20px; }
+  .adm__stat { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .adm__stat b { display: block; font-size: 1.6rem; line-height: 1.1; }
+  .adm__stat span { color: var(--ink-soft); font-size: 0.9rem; }
+  .adm__h { font-size: 1.2rem; margin: 20px 0 10px; }
+  .adm__counts { font-size: 0.85rem; color: var(--ink-soft); }
+  .adm__picker { display: grid; gap: 8px; }
+  .adm__picker-tools { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+  .adm__picker-list { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); max-height: 320px; overflow: auto; padding: 4px; border: 1px solid var(--border); border-radius: 10px; }
+  .adm__pick { position: relative; padding: 0; border: 2px solid transparent; border-radius: 8px; background: #fff; cursor: pointer; font: inherit; font-size: 0.75rem; text-align: left; overflow: hidden; }
+  .adm__pick img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; background: var(--lavender); }
+  .adm__pick span { display: block; padding: 2px 4px; font-weight: 700; }
+  .adm__pick[aria-pressed='true'] { border-color: var(--accent); }
+  .adm__pick[aria-pressed='true']::after { content: '✓'; position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; }
+  .adm__pick em { position: absolute; top: 4px; left: 4px; font-style: normal; font-size: 0.65rem; background: #fff4d6; color: #8a5a00; border-radius: 999px; padding: 0 6px; }
   .adm__usage { margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background: var(--lavender-100); }
   .adm__usage[data-warn='true'] { background: #fff4d6; color: #8a5a00; }
   .adm__more { text-align: center; }

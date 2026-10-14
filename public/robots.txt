@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /c/
+Disallow: /ta/c/
 
 Sitemap: https://paavaifashions.com/sitemap-index.xml

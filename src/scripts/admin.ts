@@ -42,11 +42,27 @@ type Design = {
   updated_at: string;
 };
 
+type Collection = {
+  id: string;
+  token: string;
+  title: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  note: string | null;
+  design_ids: string[];
+  show_prices: boolean;
+  expires_at: string | null;
+  views: number;
+  last_viewed_at: string | null;
+  created_at: string;
+};
+type Counts = { views: number; shortlists: number; enquiries: number };
+
 type Option = string | { value: string; label: string };
 type Field = {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'image' | 'url' | 'images' | 'tags' | 'video';
+  type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'image' | 'url' | 'images' | 'tags' | 'video' | 'date' | 'designs';
   options?: Option[];
   hint?: string;
   required?: boolean;
@@ -71,6 +87,9 @@ let settings: Data = {};
 let publishedAt: string | null = null;
 let lastChange = 0;
 let designLimit = PAGE;
+let collections: Collection[] = [];
+// Last 30 days of anonymous counts per design id (shown on design rows).
+let counts30 = new Map<string, Counts>();
 
 // ---------------------------------------------------------------- helpers
 
@@ -205,13 +224,16 @@ async function showUsage() {
 // ---------------------------------------------------------------- data
 
 async function loadAll() {
-  const [it, st, ca, de] = await Promise.all([
+  const [it, st, ca, de, co] = await Promise.all([
     supabase.from('website_items').select('id, kind, position, hidden, data, updated_at').in('kind', ['review', 'service']).order('position'),
     supabase.from('website_settings').select('data, published_at, updated_at').maybeSingle(),
     supabase.from('website_categories').select('*').order('position'),
     supabase.from('website_designs').select('*').order('created_at', { ascending: false }),
+    supabase.from('website_collections').select('*').order('created_at', { ascending: false }),
   ]);
-  for (const r of [it, ca, de]) if (r.error) throw r.error;
+  for (const r of [it, ca, de, co]) if (r.error) throw r.error;
+  collections = (co.data ?? []) as Collection[];
+  counts30 = await loadCounts(30);
   items = (it.data ?? []) as Item[];
   settings = (st.data?.data as Data) ?? {};
   publishedAt = st.data?.published_at ?? null;
@@ -229,6 +251,57 @@ async function loadAll() {
 }
 
 const listOf = (kind: Kind) => items.filter((i) => i.kind === kind).sort((a, b) => a.position - b.position);
+
+async function loadCounts(days: number): Promise<Map<string, Counts>> {
+  const since = new Date(Date.now() - (days - 1) * 864e5).toISOString().slice(0, 10);
+  const { data, error } = await supabase.rpc('website_design_insights', { p_since: since });
+  if (error) return new Map();
+  return new Map(
+    (data as ({ design_id: string } & Counts)[]).map((r) => [
+      r.design_id,
+      { views: Number(r.views), shortlists: Number(r.shortlists), enquiries: Number(r.enquiries) },
+    ]),
+  );
+}
+
+// Client links
+
+const collectionUrl = (c: Collection) => `${location.origin}/c/${c.token}`;
+const waNumber = (phone: string) => {
+  const d = phone.replace(/\D/g, '').replace(/^0+/, '');
+  return d.length === 10 ? `91${d}` : d;
+};
+
+async function saveCollection(c: Collection | null, out: Data) {
+  const ids = out.design_ids as string[];
+  if (!ids.length) throw new Error('Pick at least one design.');
+  const date = str(out.expires_at);
+  const row = {
+    title: str(out.title).trim(),
+    customer_name: str(out.customer_name).trim() || null,
+    customer_phone: str(out.customer_phone).trim() || null,
+    note: str(out.note).trim() || null,
+    show_prices: Boolean(out.show_prices),
+    // The link works until the end of the chosen day (India time).
+    expires_at: date ? new Date(`${date}T23:59:59+05:30`).toISOString() : null,
+    design_ids: ids,
+    updated_at: now(),
+    updated_by: session?.user.id,
+  };
+  if (c) {
+    const { error } = await supabase.from('website_collections').update(row).eq('id', c.id);
+    if (error) throw error;
+    Object.assign(c, row);
+  } else {
+    const { data, error } = await supabase
+      .from('website_collections')
+      .insert({ ...row, organization_id: SHOP_ORG_ID })
+      .select('*')
+      .single();
+    if (error) throw error;
+    collections.unshift(data as Collection);
+  }
+}
 
 async function createItem(kind: Kind, data: Data, hidden = false) {
   const list = listOf(kind);
@@ -484,6 +557,84 @@ function buildFields(container: HTMLElement, fields: Field[], values: Data, fold
       continue;
     }
 
+    if (f.type === 'designs') {
+      const chosen: string[] = [...((value as string[] | undefined) ?? [])].filter((id) => designs.some((d) => d.id === id));
+      const picked = el('div', { class: 'adm__photos' });
+      const q = el('input', { type: 'search', placeholder: 'Search code or title' });
+      const cat = el('select', {}, el('option', { value: '' }, 'All categories'), ...catOptions().map((o) => el('option', { value: o.value }, o.label)));
+      const results = el('div', { class: 'adm__picker-list' });
+      const thumb = (d: Design) => (d.images[0] ? el('img', { src: d.images[0], alt: '', loading: 'lazy' }) : el('img', { alt: '' }));
+      const drawPicked = () =>
+        picked.replaceChildren(
+          ...chosen.map((id, i) => {
+            const d = designs.find((x) => x.id === id)!;
+            const btn = (label: string, title: string, fn: () => void, disabled = false) => {
+              const b = el('button', { type: 'button', title, disabled }, label);
+              b.addEventListener('click', () => {
+                fn();
+                drawPicked();
+                drawResults();
+              });
+              return b;
+            };
+            return el(
+              'div',
+              { class: 'adm__photo' },
+              thumb(d),
+              el('span', {}, d.code),
+              el(
+                'div',
+                {},
+                btn('←', 'Move earlier', () => chosen.splice(i - 1, 0, chosen.splice(i, 1)[0]), i === 0),
+                btn('✕', 'Remove', () => chosen.splice(i, 1)),
+                btn('→', 'Move later', () => chosen.splice(i + 1, 0, chosen.splice(i, 1)[0]), i === chosen.length - 1),
+              ),
+            );
+          }),
+        );
+      const drawResults = () => {
+        const words = q.value.trim().toLowerCase();
+        const list = designs
+          .filter((d) => d.images.length)
+          .filter((d) => !cat.value || d.category_id === cat.value || catById(d.category_id)?.parent_id === cat.value)
+          .filter((d) => !words || `${d.code} ${d.title ?? ''}`.toLowerCase().includes(words))
+          .slice(0, 120);
+        results.replaceChildren(
+          ...list.map((d) => {
+            const b = el('button', { type: 'button', class: 'adm__pick', title: d.title || d.code }, thumb(d), el('span', {}, d.code));
+            if (d.hidden) b.append(el('em', {}, 'Hidden'));
+            b.setAttribute('aria-pressed', String(chosen.includes(d.id)));
+            b.addEventListener('click', () => {
+              const i = chosen.indexOf(d.id);
+              if (i >= 0) chosen.splice(i, 1);
+              else chosen.push(d.id);
+              drawPicked();
+              drawResults();
+            });
+            return b;
+          }),
+        );
+        if (!list.length) results.append(el('p', { class: 'muted small' }, 'No designs match.'));
+      };
+      q.addEventListener('input', drawResults);
+      cat.addEventListener('change', drawResults);
+      drawPicked();
+      drawResults();
+      container.append(
+        el(
+          'div',
+          { class: `adm__picker ${cls}` },
+          el('strong', {}, f.label),
+          picked,
+          el('span', { class: 'hint' }, 'Tap designs below to add or remove them. Hidden designs can be included (they show as “Exclusive”).'),
+          el('div', { class: 'adm__picker-tools' }, q, cat),
+          results,
+        ),
+      );
+      readers.push(() => setPath(out, f.key, [...chosen]));
+      continue;
+    }
+
     if (f.type === 'tags') {
       const chosen = new Set((value as string[] | undefined) ?? []);
       const boxes = Object.entries(WORK_TYPES).map(([tag, l]) => {
@@ -573,6 +724,8 @@ function buildFields(container: HTMLElement, fields: Field[], values: Data, fold
       const opts = f.options!.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
       input = el('select', {}, ...opts.map((o) => el('option', { value: o.value }, o.label)));
       input.value = value == null || value === '' ? opts[0]?.value ?? '' : str(value);
+    } else if (f.type === 'date') {
+      input = el('input', { type: 'date', value: value ? new Date(str(value)).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '' });
     } else input = el('input', { type: f.type === 'number' ? 'number' : f.type === 'url' ? 'url' : 'text', value: str(value), min: '0' });
     input.required = Boolean(f.required);
     input.name = f.key;
@@ -699,6 +852,22 @@ function editDesign(d: Design | null) {
     const keep = new Set<unknown>([...images, target.video]);
     await removeMedia(oldMedia.filter((u) => u && !keep.has(u)));
   });
+}
+
+const collectionFields: Field[] = [
+  { key: 'title', label: 'Title (the customer sees this)', type: 'text', required: true, hint: 'e.g. Bridal blouse options for Priya' },
+  { key: 'customer_name', label: 'Customer name (optional)', type: 'text' },
+  { key: 'customer_phone', label: 'Customer WhatsApp number (optional)', type: 'text', hint: 'To send the link from here' },
+  { key: 'note', label: 'Message to the customer (optional)', type: 'textarea', hint: 'e.g. These can be done in 10 days. Colours can be changed.' },
+  { key: 'show_prices', label: 'Show prices', type: 'checkbox' },
+  { key: 'expires_at', label: 'Link works until (optional)', type: 'date', hint: 'Empty = no end date' },
+  { key: 'design_ids', label: 'Designs', type: 'designs', full: true },
+];
+
+function editCollection(c: Collection | null) {
+  if (!designs.some((d) => d.images.length)) return toast('Upload some designs first.', 'error');
+  const values: Data = c ? { ...c } : { show_prices: true, design_ids: [] };
+  edit(c ? 'Edit client link' : 'New client link', collectionFields, values, 'collections', (out) => saveCollection(c, out));
 }
 
 function editCategory(cat: Category | null) {
@@ -836,6 +1005,110 @@ function renderCategories() {
   f.value = catById(keep) ? keep : '';
 }
 
+const fmtDate = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+function renderCollections() {
+  $('#list-collection').replaceChildren(
+    ...collections.map((c) => {
+      const first = designs.find((d) => d.id === c.design_ids[0]);
+      const expired = c.expires_at && new Date(c.expires_at) < new Date();
+      const opened = c.views ? `Opened ${c.views} time${c.views === 1 ? '' : 's'}, last ${fmtDate(c.last_viewed_at!)}` : 'Not opened yet';
+      const acts: [string, string, boolean?][] = [
+        ['copy', 'Copy link'],
+        ['wa', 'Send on WhatsApp'],
+        ['preview', 'Preview'],
+        ['edit', 'Edit'],
+        ['delete', 'Delete'],
+      ];
+      return el(
+        'li',
+        { class: 'adm__row', dataset: { hidden: String(Boolean(expired)) } },
+        first?.images[0] ? el('img', { src: first.images[0], alt: '' }) : null,
+        el(
+          'div',
+          { class: 'adm__body' },
+          el('strong', {}, c.title),
+          el('span', { class: 'muted small' }, [c.customer_name, `${c.design_ids.length} design${c.design_ids.length === 1 ? '' : 's'}`, c.show_prices ? 'prices shown' : 'prices hidden'].filter(Boolean).join(' · ')),
+          el('span', { class: 'adm__counts' }, opened),
+          el(
+            'div',
+            { class: 'adm__badges' },
+            expired ? el('span', { class: 'adm__badge adm__badge--warn' }, 'Expired') : c.expires_at ? el('span', { class: 'adm__badge' }, `Until ${new Date(c.expires_at).toLocaleDateString('en-IN')}`) : null,
+          ),
+        ),
+        rowButtons(`collection:${c.id}`, acts),
+      );
+    }),
+  );
+  if (!collections.length) $('#list-collection').append(el('li', { class: 'muted' }, 'No client links yet.'));
+}
+
+async function renderInsights() {
+  const days = Number($<HTMLSelectElement>('#i-days').value);
+  const key = $<HTMLSelectElement>('#i-sort').value as keyof Counts;
+  const map = days === 30 ? counts30 : await loadCounts(days);
+  const zero: Counts = { views: 0, shortlists: 0, enquiries: 0 };
+  const total = [...map.values()].reduce((a, c) => ({ views: a.views + c.views, shortlists: a.shortlists + c.shortlists, enquiries: a.enquiries + c.enquiries }), { ...zero });
+  const stat = (n: number, label: string) => el('div', { class: 'adm__stat' }, el('b', {}, String(n)), el('span', {}, label));
+  $('#i-totals').replaceChildren(
+    stat(total.views, 'design views'),
+    stat(total.shortlists, '♡ shortlisted'),
+    stat(total.enquiries, 'WhatsApp enquiries'),
+    stat(collections.reduce((a, c) => a + c.views, 0), 'client link opens (all time)'),
+  );
+
+  const ranked = designs
+    .map((d) => ({ d, c: map.get(d.id) ?? zero }))
+    .filter((x) => x.c[key] > 0)
+    .sort((a, b) => b.c[key] - a.c[key] || b.c.views - a.c.views)
+    .slice(0, 20);
+  $('#i-top').replaceChildren(
+    ...ranked.map(({ d, c }, i) => {
+      const cat = catById(d.category_id);
+      return el(
+        'li',
+        { class: 'adm__row' },
+        d.images[0] ? el('img', { src: d.images[0], alt: '' }) : null,
+        el(
+          'div',
+          { class: 'adm__body' },
+          el('strong', {}, `${i + 1}. ${d.code}${d.title ? ` · ${d.title}` : ''}`),
+          el('span', { class: 'muted small' }, cat ? catLabel(cat) : ''),
+          el('span', { class: 'adm__counts' }, `👁 ${c.views} views · ♡ ${c.shortlists} · 💬 ${c.enquiries} enquiries`),
+        ),
+        rowButtons(`design:${d.id}`, [['edit', 'Edit']]),
+      );
+    }),
+  );
+  if (!ranked.length) $('#i-top').append(el('li', { class: 'muted' }, 'No activity in this period yet.'));
+
+  const byCat = topCats()
+    .map((t) => {
+      const ids = new Set([t.id, ...childCats(t.id).map((c) => c.id)]);
+      const sum = designs.filter((d) => ids.has(d.category_id)).reduce((a, d) => {
+        const c = map.get(d.id) ?? zero;
+        return { views: a.views + c.views, shortlists: a.shortlists + c.shortlists, enquiries: a.enquiries + c.enquiries };
+      }, { ...zero });
+      return { t, sum };
+    })
+    .sort((a, b) => b.sum[key] - a.sum[key]);
+  $('#i-cats').replaceChildren(
+    ...byCat.map(({ t, sum }) =>
+      el(
+        'li',
+        { class: 'adm__row' },
+        el('div', { class: 'adm__body' }, el('strong', {}, t.name_en), el('span', { class: 'adm__counts' }, `👁 ${sum.views} · ♡ ${sum.shortlists} · 💬 ${sum.enquiries}`)),
+      ),
+    ),
+  );
+
+  const visible = designs.filter((d) => !d.hidden && d.images.length);
+  const quiet = visible.filter((d) => !(map.get(d.id)?.views)).length;
+  $('#i-quiet').textContent = visible.length
+    ? `${quiet} of ${visible.length} designs on the website had no views in this period — consider better photos, a price, or featuring them on Instagram.`
+    : '';
+}
+
 function priceEditor(d: Design) {
   const type = el('select', { ariaLabel: 'Price type' }, ...PRICE_TYPES.map((o) => el('option', { value: o.value }, o.label)));
   type.value = d.price_type;
@@ -896,6 +1169,9 @@ function renderDesigns() {
           { class: 'adm__body' },
           el('strong', {}, `${d.code}${d.title ? ` · ${d.title}` : ''}`),
           el('span', { class: 'muted small' }, `${cat ? catLabel(cat) : '?'} · ${d.images.length} photo${d.images.length === 1 ? '' : 's'}`),
+          counts30.get(d.id)
+            ? el('span', { class: 'adm__counts' }, `Last 30 days: 👁 ${counts30.get(d.id)!.views} · ♡ ${counts30.get(d.id)!.shortlists} · 💬 ${counts30.get(d.id)!.enquiries}`)
+            : null,
           priceEditor(d),
           el(
             'div',
@@ -952,6 +1228,8 @@ function renderSettings() {
 }
 
 function renderAll() {
+  renderCollections();
+  void renderInsights();
   renderCategories();
   renderDesigns();
   renderItems('review');
@@ -974,6 +1252,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-add]').forEach((b) =>
     const what = b.dataset.add!;
     if (what === 'design') editDesign(null);
     else if (what === 'category') editCategory(null);
+    else if (what === 'collection') editCollection(null);
     else addItem(what as Kind);
   }),
 );
@@ -993,6 +1272,27 @@ root.addEventListener('click', async (e) => {
         await deleteDesign(d);
         toast(`${d.code} deleted`);
         void showUsage();
+      }
+    } else if (type === 'collection') {
+      const c = collections.find((x) => x.id === id)!;
+      if (act === 'edit') return editCollection(c);
+      if (act === 'preview') return void window.open(`${collectionUrl(c)}?preview=1`, '_blank', 'noopener');
+      if (act === 'copy') {
+        await navigator.clipboard.writeText(collectionUrl(c));
+        return toast('Link copied — paste it in WhatsApp');
+      }
+      if (act === 'wa') {
+        const hello = c.customer_name ? `Hi ${c.customer_name}! ` : 'Hi! ';
+        const text = `${hello}Here are some designs we picked for you: ${collectionUrl(c)}\nTap ♡ on the ones you like and send them back to us.`;
+        const to = c.customer_phone ? waNumber(c.customer_phone) : '';
+        return void window.open(`https://wa.me/${to}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      }
+      if (act === 'delete') {
+        if (!confirm(`Delete “${c.title}”? The link will stop working.`)) return;
+        const { error } = await supabase.from('website_collections').delete().eq('id', c.id);
+        if (error) throw error;
+        collections = collections.filter((x) => x.id !== c.id);
+        toast('Client link deleted');
       }
     } else if (type === 'category') {
       const c = catById(id)!;
@@ -1042,6 +1342,8 @@ $<HTMLInputElement>('#bulk-files').addEventListener('change', (e) => {
     renderDesigns();
   }),
 );
+['#i-days', '#i-sort'].forEach((sel) => $(sel).addEventListener('change', () => void renderInsights()));
+
 $('#design-more').addEventListener('click', () => {
   designLimit += PAGE;
   renderDesigns();

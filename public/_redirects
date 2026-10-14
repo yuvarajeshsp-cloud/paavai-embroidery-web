@@ -12,3 +12,8 @@
 /privacy.html         https://app.paavaifashions.com/privacy.html         301
 /delete-account.html  https://app.paavaifashions.com/delete-account.html  301
 /app                  https://app.paavaifashions.com/                     301
+
+# Private client collections: /c/<code> is one page that loads the
+# collection in the browser.
+/c/*     /c/index.html     200
+/ta/c/*  /ta/c/index.html  200

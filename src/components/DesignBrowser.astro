@@ -4,7 +4,7 @@
 // are kept in the URL (?cat=&price=&work=&q=&sort=) so a filtered view can be
 // shared.
 import DesignCard from './DesignCard.astro';
-import { PRICE_BUCKETS, WORK_TYPES, categoryName, subcategories, type Category, type Design } from '../lib/designs';
+import { PRICE_BUCKETS, WORK_TYPES, categoryName, popularity, subcategories, type Category, type Design } from '../lib/designs';
 import { t, type Lang } from '../i18n/strings';
 
 interface Props {
@@ -21,6 +21,7 @@ const { lang, designs, chips, nested = false } = Astro.props;
 const s = t(lang).designs;
 const usedTags = Object.keys(WORK_TYPES).filter((tag) => designs.some((d) => d.tags.includes(tag)));
 const hasPrices = designs.some((d) => d.price_type !== 'ask' && d.price != null);
+const hasPopular = designs.some((d) => popularity(d.code) > 0);
 const chipCats = chips.filter((c) => designs.some((d) => d.category_id === c.id || subcategories(c.id).some((sc) => sc.id === d.category_id)));
 const subChips = nested
   ? chipCats.flatMap((c) => subcategories(c.id).filter((sc) => designs.some((d) => d.category_id === sc.id)))
@@ -54,6 +55,7 @@ const subChips = nested
     }
     <select name="sort" aria-label={s.sort}>
       <option value="">{s.newest}</option>
+      {hasPopular && <option value="popular">{s.mostPopular}</option>}
       {hasPrices && <option value="low">{s.priceLow}</option>}
       {hasPrices && <option value="high">{s.priceHigh}</option>}
     </select>
@@ -252,7 +254,9 @@ const subChips = nested
 
       const key = (c: HTMLElement) => (c.dataset.min ? Number(c.dataset.min) : NaN);
       const order = [...matches];
-      if (sort.value) {
+      if (sort.value === 'popular') {
+        order.sort((a, b) => Number(b.dataset.pop) - Number(a.dataset.pop) || Number(a.dataset.index) - Number(b.dataset.index));
+      } else if (sort.value) {
         order.sort((a, b) => {
           const x = key(a);
           const y = key(b);

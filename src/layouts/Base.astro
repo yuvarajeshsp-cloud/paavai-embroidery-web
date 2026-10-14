@@ -14,9 +14,11 @@ interface Props {
   // Page path without the language prefix, e.g. '/designs'.
   path: string;
   image?: string;
+  // Private pages (client collections): keep out of search engines.
+  noindex?: boolean;
 }
 
-const { lang, title, description, path, image = '/images/og-default.png' } = Astro.props;
+const { lang, title, description, path, image = '/images/og-default.png', noindex = false } = Astro.props;
 const fullTitle = path === '/' ? `${title}` : `${title} · ${lang === 'ta' ? site.nameTa : site.name}`;
 const canonical = new URL(localePath(lang, path), site.url).toString();
 const altEn = new URL(localePath('en', path), site.url).toString();
@@ -59,6 +61,7 @@ const localBusiness = {
     </script>
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="en-IN" href={altEn} />
     <link rel="alternate" hreflang="ta-IN" href={altTa} />
@@ -100,8 +103,10 @@ const localBusiness = {
     <script>
       import { initTracking } from '../scripts/tracking';
       import { initShortlist } from '../scripts/shortlist';
+      import { initStats } from '../scripts/stats';
       initTracking();
       initShortlist();
+      initStats();
     </script>
   </body>
 </html>

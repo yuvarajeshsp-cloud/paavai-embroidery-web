@@ -21,6 +21,8 @@ Last updated: 14 Oct 2026
 - Design catalogue: `/designs` (search, category and subcategory chips, price and work-type filters, sorting), a page per category (`/designs/<slug>`) and per design (`/design/pe-0001`) with photos, price, WhatsApp enquiry with the design code, share button and similar designs. `/gallery` redirects to `/designs`.
 - Shortlist: ♡ on every design (saved on the visitor's phone), floating "Shortlist" button, `/shortlist` page with **Send shortlist on WhatsApp** (codes, names, prices and a link). A list link `/shortlist?codes=PE-0001,PE-0007` shows those designs to anyone — you can also send customers hand-picked sets this way.
 - Instagram/Facebook Shop feed `/catalog.xml`: every design with a price (see `docs/META_SETUP.md` section 4).
+- Client links: private pages `/c/<code>` with hand-picked designs for one customer (can include hidden "exclusive" designs, optional prices and end date). Loaded live — no publishing needed. The customer taps ♡ and sends their choices on WhatsApp; `/admin` shows when the link was opened.
+- Insights: anonymous counts of design views, ♡ and WhatsApp enquiries (no visitor data). Shown in `/admin` → Insights and on each design row; the website gets a "Most popular" sort and "Popular" badges (updated when you publish).
 - WhatsApp +91 95145 88588 on every page, pre-filled messages that say where the visitor came from.
 - Admin page at `/admin` with the Shop Manager login: designs (bulk photo upload, watermark, quick price editing), categories and subcategories, reviews, services & prices, logo, phone, social and Google links, address, hours. **Publish website** puts changes live.
 - Enquiry form saved by Netlify Forms (e-mail alert), then opens WhatsApp.
@@ -55,6 +57,8 @@ Open https://paavaifashions.com/admin on a phone or computer and sign in with yo
 | Tab | What you can do |
 | --- | --- |
 | Designs | **+ Upload photos (one design each)**: pick many photos, choose the category (and optionally price and work type) and each photo becomes a design with its own code, PE-0001, PE-0002… Then set prices right in the list (Price on request / Fixed / From / Range). **Edit** a design to add more photos (← → to order, first = main photo), title, description, work type, delivery time, video, Featured, Available, Hide. Filter by category, "Price not set", hidden… A storage meter shows how much of the 1 GB free space is used. |
+| Client links | **+ New client link**: title (e.g. "Bridal options for Priya"), customer name and WhatsApp number, a message, show/hide prices, optional end date, then tap designs to add them (hidden designs show as "Exclusive"). Then **Send on WhatsApp** (opens WhatsApp with the link ready), **Copy link** or **Preview** (doesn't count as the customer opening it). The list shows how many times the customer opened it. |
+| Insights | Views, ♡ and WhatsApp enquiries for the last 7/30/90 days: totals, top 20 designs, totals per category, and how many designs had no views. |
 | Categories | Add categories and subcategories (one level, e.g. Blouse › Back neck) with English and Tamil names and an optional cover photo. ↑ ↓ to order, Hide/Show. A category with designs or subcategories can't be deleted — hide it instead. |
 | Reviews | Add your Google reviews (name, stars, text). Turn off **Sample** on real ones. |
 | Services & prices | Name, Tamil name, price (empty = "Ask for a quote"), photo for the Instagram Shop. |
@@ -96,3 +100,5 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 - `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture, WhatsApp click tracking.
 - `src/scripts/shortlist.ts`: ♡ buttons (`[data-heart]`), localStorage list, `AddToWishlist`. `/shortlist` builds itself from `/designs-index.json`.
 - `src/pages/catalog.xml.ts`: Meta product feed (designs with a price, id = design code).
+- `src/views/CollectionView.astro`: client link page; `public/_redirects` serves it for every `/c/*`. Data from `view_collection(token)` (counts opens unless `?preview=1`).
+- `src/scripts/stats.ts`: anonymous counters via `track_design_event(slug, code, kind)`; table `website_design_stats`; admin reads `website_design_insights(since)`; the build gets 60-day scores in `popular`.

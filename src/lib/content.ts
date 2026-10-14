@@ -20,6 +20,7 @@ type Content = {
   designs: Record<string, unknown>[];
   reviews: Record<string, unknown>[];
   services: Record<string, unknown>[];
+  popular: Record<string, number>;
 };
 
 const local: Content = {
@@ -28,6 +29,7 @@ const local: Content = {
   designs: [],
   reviews: (localReviews.reviews as Record<string, unknown>[]).filter((i) => !i.hidden),
   services: (localServices.services as Record<string, unknown>[]).filter((i) => i.show !== false),
+  popular: {},
 };
 
 async function load(): Promise<Content> {
@@ -47,6 +49,7 @@ async function load(): Promise<Content> {
       designs: data.designs ?? [],
       reviews: data.reviews,
       services: data.services,
+      popular: data.popular ?? {},
     };
   } catch (err) {
     if (process.env.NETLIFY) throw new Error(`[content] Could not load website content from Supabase: ${err}`);
