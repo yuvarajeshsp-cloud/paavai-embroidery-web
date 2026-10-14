@@ -138,10 +138,20 @@ export function trackEvent(name: string, params: Record<string, unknown> = {}, e
   return eventId;
 }
 
+// Product details for catalog events: content_ids are design codes, the same
+// ids as in /catalog.xml, so Meta can match visits to catalog products.
+export type ProductData = { content_ids: string[]; content_type: 'product'; value?: number; currency?: 'INR' };
+
 // Mirror a browser event through the Conversions API (survives ad blockers).
-export function sendServerEvent(name: 'Contact' | 'ViewContent', eventId: string) {
+export function sendServerEvent(name: 'Contact' | 'ViewContent' | 'AddToWishlist', eventId: string, product?: ProductData) {
   if (!trackingEnabled()) return;
-  const body = JSON.stringify({ event_name: name, event_id: eventId, event_source_url: location.href, ...metaBrowserIds() });
+  const body = JSON.stringify({
+    event_name: name,
+    event_id: eventId,
+    event_source_url: location.href,
+    ...(product && { custom_data: product }),
+    ...metaBrowserIds(),
+  });
   const url = '/.netlify/functions/meta-event';
   if (navigator.sendBeacon) navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
   else fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});

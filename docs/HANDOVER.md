@@ -19,10 +19,12 @@ Last updated: 14 Oct 2026
 **Done**
 - Website built with Astro: Home, Designs (catalogue), Services & prices, About, Contact, Privacy, in English (`/…`) and Tamil (`/ta/…`).
 - Design catalogue: `/designs` (search, category and subcategory chips, price and work-type filters, sorting), a page per category (`/designs/<slug>`) and per design (`/design/pe-0001`) with photos, price, WhatsApp enquiry with the design code, share button and similar designs. `/gallery` redirects to `/designs`.
+- Shortlist: ♡ on every design (saved on the visitor's phone), floating "Shortlist" button, `/shortlist` page with **Send shortlist on WhatsApp** (codes, names, prices and a link). A list link `/shortlist?codes=PE-0001,PE-0007` shows those designs to anyone — you can also send customers hand-picked sets this way.
+- Instagram/Facebook Shop feed `/catalog.xml`: every design with a price (see `docs/META_SETUP.md` section 4).
 - WhatsApp +91 95145 88588 on every page, pre-filled messages that say where the visitor came from.
 - Admin page at `/admin` with the Shop Manager login: designs (bulk photo upload, watermark, quick price editing), categories and subcategories, reviews, services & prices, logo, phone, social and Google links, address, hours. **Publish website** puts changes live.
 - Enquiry form saved by Netlify Forms (e-mail alert), then opens WhatsApp.
-- Meta Pixel + Conversions API, cookie banner, Instagram feed, Shop catalog at `/catalog.xml`, short links `/ig`, `/ig-story`, `/ta/ig`. Switched off until their keys are added.
+- Meta Pixel + Conversions API (`ViewContent` and `AddToWishlist` carry the design code), cookie banner, Instagram feed, short links `/ig`, `/ig-story`, `/ta/ig`. Switched off until their keys are added.
 
 **Still to fill in** (in `/admin`): designs (starter categories are there, no designs yet), address (map hidden), logo, reviews (marked "Sample"), service prices (sample list), Google links.
 
@@ -92,3 +94,5 @@ Follow `docs/META_SETUP.md`: Business account, then Pixel + token (`PUBLIC_META_
 - Enquiry form: Netlify Forms (`form-name=enquiry`, honeypot `website`); with consent it also calls `netlify/functions/enquiry.mjs` for a CAPI `Lead`.
 - `src/layouts/Base.astro` forwards Supabase auth links (`#access_token=…`, `?code=…`) to app.paavaifashions.com, for older Shop Manager builds that still send them to the main domain.
 - `src/scripts/tracking.ts`: cookie consent, Meta Pixel, UTM/fbclid capture, WhatsApp click tracking.
+- `src/scripts/shortlist.ts`: ♡ buttons (`[data-heart]`), localStorage list, `AddToWishlist`. `/shortlist` builds itself from `/designs-index.json`.
+- `src/pages/catalog.xml.ts`: Meta product feed (designs with a price, id = design code).

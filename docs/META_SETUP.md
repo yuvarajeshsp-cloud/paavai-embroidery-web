@@ -48,14 +48,25 @@ The feed is fetched on every build, so set up the daily build hook (see README).
 
 ## 4. Instagram / Facebook Shop catalog
 
-The site publishes a product feed at **https://paavaifashions.com/catalog.xml**, one item per published service that has a price.
+The site publishes a product feed at **https://paavaifashions.com/catalog.xml**. It is rebuilt every time you press **Publish website** in `/admin`.
 
-1. *Commerce Manager* (<https://business.facebook.com/commerce>) → *Add catalog* → **E-commerce** → *Upload product info*.
-2. *Data sources → Data feed → Scheduled feed* → URL `https://paavaifashions.com/catalog.xml` → repeat **daily**, currency **INR**.
-3. Connect the catalog to the Pixel (*Catalog → Settings → Event sources*).
-4. To tag products in Instagram posts, set up the shop under *Commerce Manager → Shops* (Meta reviews eligibility).
+What is in it:
+- **One product per design that has a price** (Fixed, From or Range). Designs set to "Price on request" are left out, because Meta requires a price. For From/Range prices the lowest price is used and the description says "Starting price ₹…".
+- Product id = **design code** (PE-0001), title = design name + code, all photos (main photo + up to 10 more), link to the design page (tagged `utm_source=instagram&utm_medium=shop`), availability from the "Available to order" switch, category path in `product_type` and `custom_label_0/1`, work types in `custom_label_2`.
+- Services that have their own photo in `/admin` → Services & prices.
 
-Each product needs a real photo (JPG or PNG, at least 500×500). Add a photo to each service in the admin page (`/admin` → Services & prices). Until then, items use a gallery photo of the same category, or the default image.
+Set-up (one time):
+1. *Commerce Manager* (<https://business.facebook.com/commerce>) → *Add catalog* → **E-commerce** → *Upload product info*, owned by the shop's Business account.
+2. *Catalog → Data sources → Add items → Data feed → Scheduled feed* → URL `https://paavaifashions.com/catalog.xml` → repeat **daily**, currency **INR**. Use *Fetch now* the first time.
+3. *Catalog → Events* (or *Settings → Event sources*): connect the **Pixel** (section 2). The site already sends `ViewContent` (design page) and `AddToWishlist` (♡ shortlist) with `content_ids` = design code, so Meta can match visits to products.
+4. *Commerce Manager → Shops* → create a shop for the Instagram account (checkout method: **checkout on another website**). Meta reviews eligibility; this can take a few days.
+5. Once approved: in the Instagram app, *Settings → Business tools → Shopping*, then tag designs in posts and reels (*Tag products*).
+6. Optional: in Ads Manager, a **catalog sales** campaign can show people the designs they looked at or shortlisted.
+
+Notes:
+- Photos must be JPG/PNG of at least 500×500 (the admin's 1600 px uploads are fine).
+- The small "Paavai Embroidery · PE-0001" watermark is usually accepted, but Meta can reject product images it considers to have overlays. If products are rejected for the image, tell your developer: the admin can keep an unwatermarked copy for the catalog.
+- Prices in the feed must match the website, so change prices only in `/admin` and press **Publish website**.
 
 ## 5. Tagged links
 

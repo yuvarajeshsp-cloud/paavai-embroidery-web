@@ -1,0 +1,206 @@
+---
+// The visitor's shortlist (codes saved in this browser), or a shared list
+// from a link (?codes=PE-0001,PE-0007), built in the browser from
+// /designs-index.json. "Send shortlist on WhatsApp" sends the codes, names,
+// prices and a link back to this list.
+import Base from '../layouts/Base.astro';
+import { site } from '../config/site';
+import { localePath, t, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+const sl = s.shortlist;
+const strings = {
+  title: sl.title,
+  intro: sl.intro,
+  sharedTitle: sl.sharedTitle,
+  sharedIntro: sl.sharedIntro,
+  remove: sl.remove,
+  copied: sl.copied,
+  saved: sl.saved,
+  clearConfirm: sl.clearConfirm,
+  greeting: s.waGreeting,
+  waIntro: sl.waIntro(999),
+  waIntroOne: sl.waIntro(1),
+  waLink: sl.waLink,
+  unavailable: s.designs.unavailable,
+};
+---
+
+<Base lang={lang} title={sl.title} description={sl.intro} path="/shortlist">
+  <section class="section section--tight">
+    <div
+      class="container shortlist"
+      data-lang={lang}
+      data-wa={site.whatsapp}
+      data-base={new URL(localePath(lang, '/shortlist'), site.url).toString()}
+      data-strings={JSON.stringify(strings)}
+    >
+      <h1 data-title>{sl.title}</h1>
+      <p class="section__intro" data-intro>{sl.intro}</p>
+
+      <p class="muted" data-loading>{sl.loading}</p>
+
+      <div class="card empty" data-empty hidden>
+        <p>{sl.empty}</p>
+        <a class="btn btn--primary" href={localePath(lang, '/designs')}>{sl.browse}</a>
+      </div>
+
+      <div data-full hidden>
+        <div class="btn-row actions">
+          <a class="btn btn--whatsapp" data-send data-wa="shortlist" rel="noopener" href="#">{sl.send}</a>
+          <button type="button" class="btn btn--primary" data-save-all hidden>{sl.saveAll}</button>
+          <button type="button" class="btn btn--ghost" data-share>{sl.share}</button>
+          <button type="button" class="btn btn--ghost" data-clear>{sl.clear}</button>
+        </div>
+        <ul class="list" data-list></ul>
+        <p class="more"><a class="btn btn--ghost" href={localePath(lang, '/designs')}>{sl.browse} →</a></p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .section--tight { padding-top: clamp(24px, 4vw, 48px); }
+  .muted { color: var(--ink-soft); }
+  .shortlist [hidden] { display: none !important; }
+  .empty { text-align: center; }
+  .actions { margin-bottom: 20px; }
+  .list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .more { margin-top: 24px; }
+  .shortlist :global(.sl-item) {
+    display: flex; gap: 14px; align-items: center; background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px;
+  }
+  .shortlist :global(.sl-item img) { width: 72px; height: 90px; object-fit: cover; border-radius: 10px; background: var(--lavender); flex: none; }
+  .shortlist :global(.sl-item a) { color: inherit; text-decoration: none; flex: 1; display: grid; gap: 2px; min-width: 0; }
+  .shortlist :global(.sl-code) { font-size: 0.8rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; }
+  .shortlist :global(.sl-name) { font-weight: 600; line-height: 1.3; }
+  .shortlist :global(.sl-price) { font-weight: 700; }
+  .shortlist :global(.sl-off) { font-size: 0.85rem; color: #8a5a00; }
+  .shortlist :global(.sl-item button) {
+    font: inherit; font-size: 0.9rem; border: 1px solid var(--border); background: var(--lavender-50);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; color: var(--ink);
+  }
+  .shortlist :global(.sl-item .sl-heart) { width: 40px; height: 40px; padding: 0; border-radius: 50%; color: var(--ink-soft); font-size: 1.1rem; }
+  .shortlist :global(.sl-item .sl-heart[aria-pressed='true']) { color: #d6336c; border-color: #d6336c; }
+</style>
+
+<script>
+  import { addToShortlist, getShortlist, setShortlist } from '../scripts/shortlist';
+
+  type Entry = { c: string; i: string; a: boolean; en: { n: string; p: string; u: string }; ta: { n: string; p: string; u: string } };
+
+  const root = document.querySelector<HTMLElement>('.shortlist')!;
+  const lang = root.dataset.lang as 'en' | 'ta';
+  const str = JSON.parse(root.dataset.strings!);
+  const $ = (sel: string) => root.querySelector<HTMLElement>(sel)!;
+  const listEl = $('[data-list]');
+
+  // A shared link shows its own codes; otherwise the visitor's own list.
+  const shared = (new URLSearchParams(location.search).get('codes') ?? '')
+    .split(',')
+    .map((c) => c.trim().toUpperCase())
+    .filter((c) => /^[A-Z]+-\d+$/.test(c));
+  const isShared = shared.length > 0;
+  if (isShared) {
+    $('[data-title]').textContent = str.sharedTitle;
+    $('[data-intro]').textContent = str.sharedIntro;
+    $('[data-save-all]').hidden = false;
+    $('[data-clear]').hidden = true;
+  }
+
+  let index = new Map<string, Entry>();
+
+  const codes = () => (isShared ? shared : getShortlist()).filter((c) => index.has(c));
+  const linkFor = (list: string[]) => `${root.dataset.base}?codes=${list.join(',')}`;
+
+  function render() {
+    const list = codes();
+    const own = new Set(getShortlist());
+    $('[data-loading]').hidden = true;
+    $('[data-empty]').hidden = list.length > 0;
+    $('[data-full]').hidden = list.length === 0;
+
+    listEl.replaceChildren(
+      ...list.map((code) => {
+        const e = index.get(code)!;
+        const t = e[lang];
+        const li = document.createElement('li');
+        li.className = 'sl-item';
+        const img = Object.assign(document.createElement('img'), { src: e.i, alt: '', loading: 'lazy' });
+        const a = Object.assign(document.createElement('a'), { href: t.u });
+        const add = (cls: string, text: string) => a.append(Object.assign(document.createElement('span'), { className: cls, textContent: text }));
+        add('sl-code', e.c);
+        add('sl-name', t.n);
+        add('sl-price', t.p);
+        if (!e.a) add('sl-off', str.unavailable);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (isShared) {
+          btn.className = 'sl-heart';
+          btn.textContent = '♥';
+          btn.dataset.heart = code; // toggled by the shared shortlist script
+          btn.setAttribute('aria-pressed', String(own.has(code)));
+        } else {
+          btn.textContent = str.remove;
+          btn.addEventListener('click', () => setShortlist(getShortlist().filter((c) => c !== code)));
+        }
+        li.append(img, a, btn);
+        return li;
+      }),
+    );
+
+    // WhatsApp message: codes, names and prices, plus a link to this list.
+    const lines = list.slice(0, 30).map((code) => {
+      const t = index.get(code)![lang];
+      return `• ${code} – ${t.n} – ${t.p}`;
+    });
+    const intro = (list.length === 1 ? str.waIntroOne : str.waIntro.replace('999', String(list.length))) as string;
+    const text = [str.greeting, intro, ...lines, '', `${str.waLink} ${linkFor(list)}`].join('\n');
+    $('[data-send]').setAttribute('href', `https://wa.me/${root.dataset.wa}?text=${encodeURIComponent(text)}`);
+  }
+
+  $('[data-share]').addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const url = linkFor(codes());
+    if (navigator.share) await navigator.share({ title: document.title, url }).catch(() => {});
+    else {
+      await navigator.clipboard?.writeText(url);
+      const label = btn.textContent;
+      btn.textContent = str.copied;
+      setTimeout(() => (btn.textContent = label), 2000);
+    }
+  });
+  $('[data-clear]').addEventListener('click', () => {
+    if (confirm(str.clearConfirm)) setShortlist([]);
+  });
+  $('[data-save-all]').addEventListener('click', (e) => {
+    addToShortlist(codes());
+    (e.currentTarget as HTMLButtonElement).textContent = str.saved;
+  });
+
+  window.addEventListener('shortlist:change', render);
+  window.addEventListener('storage', render);
+
+  fetch('/designs-index.json')
+    .then((r) => r.json())
+    .then((list: Entry[]) => {
+      index = new Map(list.map((e) => [e.c, e]));
+      // Forget codes of designs that were removed from the site.
+      if (!isShared) {
+        const mine = getShortlist();
+        const kept = mine.filter((c) => index.has(c));
+        if (kept.length !== mine.length) setShortlist(kept);
+      }
+      render();
+    })
+    .catch(() => {
+      $('[data-loading]').hidden = true;
+      $('[data-empty]').hidden = false;
+    });
+</script>

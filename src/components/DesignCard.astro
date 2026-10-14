@@ -22,6 +22,7 @@ interface Props {
 
 const { lang, design: d, index = 0, eager = false } = Astro.props;
 const s = t(lang).designs;
+const sl = t(lang).shortlist;
 const cat = categoryById(d.category_id)!;
 const bounds = priceBounds(d);
 const name = designName(d, lang);
@@ -60,10 +61,14 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
       <span class="dcard__price">{priceLabel(d, lang)}</span>
     </div>
   </a>
+  <button type="button" class="dcard__heart" data-heart={d.code} aria-pressed="false" aria-label={`${sl.add}: ${d.code}`}>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4.5 6 4.1c2.1-.2 3.9.9 6 3.1 2.1-2.2 3.9-3.3 6-3.1 3.7.4 5.6 4.3 4 7.6C19.5 16.4 12 21 12 21Z" /></svg>
+  </button>
 </li>
 
 <style>
   .dcard {
+    position: relative;
     list-style: none;
     background: #fff;
     border: 1px solid var(--border);
@@ -105,9 +110,32 @@ const search = [d.code, d.title, categoryName(cat, 'en'), cat.name_ta, ...d.tags
     color: #fff;
   }
   .dcard__badge--off {
-    left: auto;
-    right: 8px;
+    top: auto;
+    bottom: 8px;
     background: rgb(35 34 79 / 0.8);
+  }
+  .dcard__heart {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.92);
+    box-shadow: 0 2px 8px rgb(35 34 79 / 0.15);
+    cursor: pointer;
+  }
+  .dcard__heart path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.8;
+  }
+  .dcard__heart[aria-pressed='true'] path {
+    fill: #d6336c;
+    stroke: #d6336c;
   }
   .dcard__body {
     padding: 10px 12px 12px;

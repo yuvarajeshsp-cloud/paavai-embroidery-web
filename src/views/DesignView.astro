@@ -25,6 +25,7 @@ interface Props {
 const { lang, design: d } = Astro.props;
 const s = t(lang);
 const ds = s.designs;
+const sl = s.shortlist;
 const cat = categoryById(d.category_id)!;
 const parent = categoryById(cat.parent_id);
 const name = designName(d, lang);
@@ -116,6 +117,9 @@ const product = {
 
           <div class="btn-row">
             <a class="btn btn--whatsapp" href={whatsappLink(waText)} data-wa={`design:${d.code}`} rel="noopener">{ds.enquire}</a>
+            <button type="button" class="btn btn--ghost heart-btn" data-heart={d.code} data-label-on={sl.added} data-label-off={sl.add} aria-pressed="false">
+              <span aria-hidden="true">♥</span> <span data-heart-label>{sl.add}</span>
+            </button>
             <button type="button" class="btn btn--ghost" data-share={pageUrl} data-copied={ds.copied}>{ds.share}</button>
           </div>
 
@@ -146,6 +150,7 @@ const product = {
     )
   }
 
+  <span hidden data-view-content={d.code} data-value={d.price_type !== 'ask' && d.price != null ? d.price : ''}></span>
   <dialog class="lightbox" aria-label={name}>
     <img alt="" />
     <button type="button" class="lightbox__close" aria-label={ds.close}>✕</button>
@@ -182,6 +187,9 @@ const product = {
   .design__off { display: inline-block; margin: 10px 0 0; padding: 2px 12px; border-radius: 999px; background: #fff4d6; color: #8a5a00; font-weight: 600; }
   .design__info .btn-row { margin: 20px 0; }
   .design__desc { white-space: pre-line; }
+  .heart-btn span:first-child { color: var(--ink-soft); font-size: 1.1rem; }
+  .heart-btn[aria-pressed='true'] { border-color: #d6336c; }
+  .heart-btn[aria-pressed='true'] span:first-child { color: #d6336c; }
   .design__facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; }
   .design__facts dt { font-weight: 600; color: var(--ink-soft); }
   .design__facts dd { margin: 0; }
@@ -203,6 +211,19 @@ const product = {
 </style>
 
 <script>
+  import { sendServerEvent, trackEvent } from '../scripts/tracking';
+
+  // "ViewContent" with the design code, matching the id in /catalog.xml.
+  const viewed = document.querySelector<HTMLElement>('[data-view-content]');
+  if (viewed) {
+    const product = {
+      content_ids: [viewed.dataset.viewContent!],
+      content_type: 'product' as const,
+      ...(viewed.dataset.value ? { value: Number(viewed.dataset.value), currency: 'INR' as const } : {}),
+    };
+    sendServerEvent('ViewContent', trackEvent('ViewContent', product), product);
+  }
+
   const photos = document.querySelector<HTMLElement>('.photos');
   const items = [...document.querySelectorAll<HTMLButtonElement>('.photos__item')];
   const thumbs = [...document.querySelectorAll<HTMLButtonElement>('.thumbs button')];

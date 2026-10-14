@@ -5,7 +5,7 @@ import Footer from '../components/Footer.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 import WhatsAppFloat from '../components/WhatsAppFloat.astro';
 import { site, socialLinks } from '../config/site';
-import { localePath, type Lang } from '../i18n/strings';
+import { localePath, t, type Lang } from '../i18n/strings';
 
 interface Props {
   lang: Lang;
@@ -91,10 +91,55 @@ const localBusiness = {
     </main>
     <Footer lang={lang} />
     <WhatsAppFloat lang={lang} />
+    {path !== '/shortlist' && (
+      <a class="sl-float" href={localePath(lang, '/shortlist')} data-shortlist-float hidden>
+        <span aria-hidden="true">♥</span> {t(lang).shortlist.float} <b data-shortlist-count>0</b>
+      </a>
+    )}
     <ConsentBanner lang={lang} />
     <script>
       import { initTracking } from '../scripts/tracking';
+      import { initShortlist } from '../scripts/shortlist';
       initTracking();
+      initShortlist();
     </script>
   </body>
 </html>
+
+<style>
+  .sl-float {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    border: 2px solid #d6336c;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgb(35 34 79 / 0.18);
+  }
+  .sl-float[hidden] {
+    display: none;
+  }
+  .sl-float span {
+    color: #d6336c;
+    font-size: 1.1rem;
+  }
+  .sl-float b {
+    min-width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #d6336c;
+    color: #fff;
+    font-size: 0.8rem;
+    display: grid;
+    place-items: center;
+  }
+</style>
