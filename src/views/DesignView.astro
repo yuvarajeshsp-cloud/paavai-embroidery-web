@@ -37,7 +37,9 @@ const waText = `${s.waGreeting}\n${ds.wa(d.code, name, pageUrl)}`;
 // colours to try (the design's own colour first).
 const b3 = d.blouse3d && {
   ...d.blouse3d,
-  parts: Object.fromEntries(Object.entries(d.blouse3d.parts).map(([k, p]) => [k, { ...p, url: sizedImage(p.url, 1600) }])),
+  parts: Object.fromEntries(
+    Object.entries(d.blouse3d.parts).map(([k, p]) => [k, { ...p, url: sizedImage(p.url, 1600), edge_url: p.edge_url && sizedImage(p.edge_url, 2048) }]),
+  ),
 };
 const swatches = b3
   ? [
@@ -177,7 +179,7 @@ const product = {
   <span hidden data-view-content={d.code} data-value={d.price_type !== 'ask' && d.price != null ? d.price : ''}></span>
   {
     b3 && (
-      <dialog class="b3d" aria-label={`${name} – ${ds.view3d}`} data-b3d={JSON.stringify(b3)} data-fail={ds.no3d}>
+      <dialog class="b3d" aria-label={`${name} – ${ds.view3d}`} data-b3d={JSON.stringify(b3)} data-fail={ds.no3d} data-loading={ds.loading3d}>
         <div class="b3d__stage" data-stage>
           <p class="b3d__status" data-status>{ds.loading3d}</p>
         </div>
@@ -200,7 +202,7 @@ const product = {
               <input type="color" value={b3.color} data-custom-color aria-label={ds.fabric3d} />
             </label>
           </div>
-          <p class="b3d__hint">{ds.hint3d}<br />{ds.note3d}</p>
+          <p class="b3d__hint">{ds.hint3d}<br />{ds.note3d} <a href={localePath(lang, '/studio')}>{ds.studioLink}</a></p>
         </div>
       </dialog>
     )
@@ -288,6 +290,7 @@ const product = {
   .b3d__swatch--custom { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
   .b3d__swatch--custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
   .b3d__hint { margin: 0; font-size: 0.82rem; color: var(--ink-soft); text-align: center; }
+  .b3d__hint a { color: var(--accent); font-weight: 600; }
   .lightbox { padding: 0; border: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; }
   .lightbox::backdrop { background: rgb(10 10 30 / 0.92); }
   .lightbox img { width: 100%; height: 100%; object-fit: contain; }
@@ -356,6 +359,8 @@ const product = {
     const swatches = [...b3d.querySelectorAll<HTMLButtonElement>('[data-color]')];
     const custom = b3d.querySelector<HTMLInputElement>('[data-custom-color]')!;
     let viewer: import('../scripts/blouse3d-viewer').Viewer | null = null;
+    // Bumped on every open/close, so a view still loading when the dialog closes is thrown away.
+    let session = 0;
     let color = swatches[0]?.dataset.color ?? '#8a1538';
 
     const pickColor = (hex: string, btn?: HTMLElement) => {
@@ -369,12 +374,14 @@ const product = {
     document.querySelector('[data-open3d]')?.addEventListener('click', async () => {
       b3d.showModal();
       if (viewer) return;
+      const mine = ++session;
       status.hidden = false;
+      status.textContent = b3d.dataset.loading!;
       try {
         const { createViewer } = await import('../scripts/blouse3d-viewer');
-        if (!b3d.open || viewer) return;
-        viewer = createViewer(stage, { ...JSON.parse(b3d.dataset.b3d!), color }, { autoRotate: true });
-        await viewer.ready;
+        const v = await createViewer(stage, { ...JSON.parse(b3d.dataset.b3d!), color }, { autoRotate: true });
+        if (mine !== session) return v.dispose();
+        viewer = v;
         status.hidden = true;
       } catch (err) {
         console.error(err);
@@ -386,6 +393,7 @@ const product = {
     );
     b3d.querySelector('[data-close3d]')!.addEventListener('click', () => b3d.close());
     b3d.addEventListener('close', () => {
+      session++;
       viewer?.dispose();
       viewer = null;
     });
