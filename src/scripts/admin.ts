@@ -6,6 +6,19 @@
 import { createClient, type Session } from '@supabase/supabase-js';
 import { MEDIA_BUCKET, SHOP_ORG_ID, SUPABASE_KEY, SUPABASE_URL } from '../config/supabase';
 import { WORK_TYPES } from '../lib/work-types';
+import {
+  DEFAULT_PLACEMENT,
+  NECK_BACK,
+  NECK_FRONT,
+  PARTS,
+  SLEEVES,
+  emptyBlouse3D,
+  parseBlouse3D,
+  type Blouse3D,
+  type PartKey,
+  type Placement,
+} from '../lib/blouse3d';
+import type { Viewer } from './blouse3d-viewer';
 
 type Kind = 'review' | 'service';
 type Data = Record<string, unknown>;
@@ -38,9 +51,14 @@ type Design = {
   featured: boolean;
   available: boolean;
   hidden: boolean;
+  blouse3d: Blouse3D | null;
   created_at: string;
   updated_at: string;
 };
+
+/** A 3D part while editing: `file` is a new upload not saved yet (its `url` is a local preview). */
+type DraftPart = Placement & { file?: File };
+type Draft3D = Omit<Blouse3D, 'parts'> & { parts: Partial<Record<PartKey, DraftPart>> };
 
 type Collection = {
   id: string;
@@ -62,7 +80,7 @@ type Option = string | { value: string; label: string };
 type Field = {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'image' | 'url' | 'images' | 'tags' | 'video' | 'date' | 'designs';
+  type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox' | 'image' | 'url' | 'images' | 'tags' | 'video' | 'date' | 'designs' | 'blouse3d';
   options?: Option[];
   hint?: string;
   required?: boolean;
@@ -199,6 +217,37 @@ async function upload(file: File, folder: string, keepFormat = false): Promise<s
 
 const uploadDesignPhoto = async (file: File, code: string) =>
   uploadBlob(await prepareImage(file, { max: 1600, watermark: `${WATERMARK} · ${code}` }), 'designs', file.name);
+
+// 3D blouse designs keep their transparent background (WebP, or PNG where the
+// browser can't make WebP), at most 2048 px, with a small watermark.
+async function upload3DImage(file: File, code: string): Promise<string> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error(`${file.name}: this image format can't be read. Save it as PNG and try again.`);
+  }
+  const scale = Math.min(1, 2048 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * 0.022));
+  ctx.font = `600 ${size}px system-ui, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = size * 0.3;
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText(`${WATERMARK} · ${code}`, canvas.width - size * 0.6, canvas.height - size * 0.5);
+  let blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/webp', 0.9));
+  if (!blob || blob.type !== 'image/webp') blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
+  if (!blob) throw new Error(`${file.name}: could not prepare the image`);
+  return uploadBlob(blob, 'designs-3d', blob.type === 'image/webp' ? 'design.webp' : 'design.png');
+}
+
+const urls3D = (b: Blouse3D | null | undefined) => Object.values(b?.parts ?? {}).map((p) => p!.url);
 
 const bucketPrefix = `${SUPABASE_URL}/storage/v1/object/public/${MEDIA_BUCKET}/`;
 const toPaths = (urls: unknown[]) =>
@@ -404,7 +453,7 @@ async function deleteCategory(cat: Category) {
 
 // Designs
 
-const DESIGN_COLUMNS = 'id, code, category_id, title, description, price_type, price, price_max, images, video, tags, delivery, featured, available, hidden, created_at, updated_at';
+const DESIGN_COLUMNS = 'id, code, category_id, title, description, price_type, price, price_max, images, video, tags, delivery, featured, available, hidden, blouse3d, created_at, updated_at';
 
 async function insertDesign(row: Partial<Design>): Promise<Design> {
   const { data, error } = await supabase
@@ -433,7 +482,7 @@ async function deleteDesign(d: Design) {
   const { error } = await supabase.from('website_designs').delete().eq('id', d.id);
   if (error) throw error;
   designs = designs.filter((x) => x.id !== d.id);
-  await removeMedia([...d.images, d.video]);
+  await removeMedia([...d.images, d.video, ...urls3D(d.blouse3d)]);
   markChanged();
 }
 
@@ -521,6 +570,7 @@ const designFields = (): Field[] => [
   { key: 'description', label: 'Description (optional)', type: 'textarea' },
   { key: 'delivery', label: 'Delivery time (optional)', type: 'text', hint: 'e.g. 7–10 days' },
   { key: 'video', label: 'Video (optional, MP4 under 50 MB)', type: 'video' },
+  { key: 'blouse3d', label: '3D blouse view (optional)', type: 'blouse3d', full: true },
   { key: 'featured', label: 'Featured on the home page', type: 'checkbox' },
   { key: 'available', label: 'Available to order', type: 'checkbox' },
   { key: 'hidden', label: 'Hide from website', type: 'checkbox' },
@@ -532,6 +582,169 @@ function setPath(obj: Data, path: string, value: unknown) {
   let o = obj;
   for (const k of keys.slice(0, -1)) o = (o[k] ??= {}) as Data;
   o[keys.at(-1)!] = value;
+}
+
+// ---------------------------------------------------------------- 3D blouse field
+
+const VIEW_OF: Record<PartKey, 'front' | 'back' | 'right' | 'left'> = { front: 'front', back: 'back', sleeve_right: 'right', sleeve_left: 'left' };
+let preview3D: Viewer | null = null;
+
+/**
+ * Editor for a design's 3D blouse: neckline/sleeve style, fabric colour and
+ * one transparent PNG per part, placed with sliders while watching a live 3D
+ * preview. The returned reader stores a Draft3D (or null) via `set`.
+ */
+function blouse3DField(container: HTMLElement, f: Field, value: Blouse3D | null, set: (v: Draft3D | null) => void) {
+  const stored = parseBlouse3D(value);
+  const draft: Draft3D = stored ? structuredClone(stored) : emptyBlouse3D();
+  const select = <T extends string>(label: string, options: Record<T, string>, get: () => T, put: (v: T) => void) => {
+    const input = el('select', {}, ...Object.entries<string>(options).map(([v, l]) => el('option', { value: v }, l)));
+    input.value = get();
+    input.addEventListener('change', () => {
+      put(input.value as T);
+      refresh();
+    });
+    return el('label', {}, label, input);
+  };
+  const color = el('input', { type: 'color', value: draft.color });
+  color.addEventListener('input', () => {
+    draft.color = color.value;
+    preview3D?.setColor(color.value);
+  });
+
+  const stage = el('div', { class: 'adm__3d-stage' }, el('p', { class: 'muted small' }, 'Add a design below to see the 3D preview.'));
+  const views = el(
+    'div',
+    { class: 'adm__3d-views' },
+    ...(['front', 'back', 'right', 'left'] as const).map((v) => {
+      const b = el('button', { type: 'button' }, v[0].toUpperCase() + v.slice(1));
+      b.addEventListener('click', () => preview3D?.view(v));
+      return b;
+    }),
+  );
+
+  let loading: Promise<void> | null = null;
+  const dialog = $<HTMLDialogElement>('#editor');
+  const dispose = () => {
+    preview3D?.dispose();
+    preview3D = null;
+  };
+  dispose();
+  dialog.addEventListener('close', dispose, { once: true });
+
+  async function refresh() {
+    const has = Object.keys(draft.parts).length > 0;
+    if (!has) {
+      dispose();
+      stage.replaceChildren(el('p', { class: 'muted small' }, 'Add a design below to see the 3D preview.'));
+      return;
+    }
+    if (!preview3D) {
+      loading ??= import('./blouse3d-viewer').then(({ createViewer }) => {
+        if (!dialog.open || preview3D) return;
+        stage.replaceChildren();
+        preview3D = createViewer(stage, { ...draft, parts: { ...draft.parts } }, { autoRotate: false });
+      });
+      try {
+        await loading;
+      } catch (err) {
+        stage.replaceChildren(el('p', { class: 'muted small' }, `3D preview not available: ${errMsg(err, 'error')}`));
+      } finally {
+        loading = null;
+      }
+    }
+    await preview3D?.update({ ...draft, parts: { ...draft.parts } });
+  }
+
+  // Coalesce slider moves into one repaint per frame.
+  let frame = 0;
+  const refreshSoon = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => void refresh());
+  };
+
+  const rows = PARTS.map(({ key, en }) => {
+    const thumb = el('img', { alt: '', class: 'adm__3d-thumb' });
+    const file = el('input', { type: 'file', accept: 'image/png,image/webp,image/*' });
+    const remove = el('button', { type: 'button', class: 'link' }, 'Remove');
+    const sliders = el('div', { class: 'adm__3d-sliders' });
+    const slider = (label: string, prop: 'size' | 'x' | 'y', min: number) => {
+      const input = el('input', { type: 'range', min: String(min), max: '100', step: '1' });
+      input.addEventListener('input', () => {
+        const p = draft.parts[key];
+        if (!p) return;
+        p[prop] = Number(input.value) / 100;
+        refreshSoon();
+      });
+      input.addEventListener('focus', () => preview3D?.view(VIEW_OF[key]));
+      input.addEventListener('pointerdown', () => preview3D?.view(VIEW_OF[key]));
+      return { input, label: el('label', {}, label, input) };
+    };
+    const size = slider('Size', 'size', 5);
+    const across = slider('Left ↔ right', 'x', 0);
+    const up = slider('Down ↕ up', 'y', 0);
+    sliders.append(size.label, across.label, up.label);
+    const draw = () => {
+      const p = draft.parts[key];
+      thumb.hidden = remove.hidden = sliders.hidden = !p;
+      if (!p) return;
+      thumb.src = p.url;
+      size.input.value = String(Math.round(p.size * 100));
+      across.input.value = String(Math.round(p.x * 100));
+      up.input.value = String(Math.round(p.y * 100));
+    };
+    file.addEventListener('change', () => {
+      const chosen = file.files?.[0];
+      file.value = '';
+      if (!chosen) return;
+      if (chosen.type === 'image/jpeg')
+        toast(`${chosen.name} is a JPG, which has no transparent background, so its background will show on the blouse. Use PNG if you can.`, 'error');
+      const old = draft.parts[key];
+      draft.parts[key] = { ...(old ?? DEFAULT_PLACEMENT[key]), url: URL.createObjectURL(chosen), file: chosen };
+      draw();
+      void refresh().then(() => preview3D?.view(VIEW_OF[key]));
+    });
+    remove.addEventListener('click', () => {
+      delete draft.parts[key];
+      draw();
+      void refresh();
+    });
+    draw();
+    return el(
+      'div',
+      { class: 'adm__3d-part' },
+      el('strong', {}, en),
+      el('div', { class: 'adm__img-field' }, thumb, file, remove),
+      sliders,
+    );
+  });
+
+  container.append(
+    el(
+      'fieldset',
+      { class: `adm__3d ${f.full ? 'full' : ''}` },
+      el('legend', {}, f.label),
+      el(
+        'p',
+        { class: 'hint' },
+        'Upload the embroidery artwork for each part as a PNG with a transparent background. Customers get a “View in 3D” button on this design. Use the sliders to place each design; drag the preview to turn it.',
+      ),
+      el(
+        'div',
+        { class: 'adm__3d-styles' },
+        select('Front neck', NECK_FRONT, () => draft.neck_front, (v) => (draft.neck_front = v)),
+        select('Back neck', NECK_BACK, () => draft.neck_back, (v) => (draft.neck_back = v)),
+        select('Sleeves', SLEEVES, () => draft.sleeve, (v) => (draft.sleeve = v)),
+        el('label', {}, 'Fabric colour', color),
+      ),
+      stage,
+      views,
+      ...rows,
+    ),
+  );
+  void refresh();
+
+  return () => set(Object.keys(draft.parts).length ? { ...draft, parts: { ...draft.parts } } : null);
 }
 
 /**
@@ -632,6 +845,11 @@ function buildFields(container: HTMLElement, fields: Field[], values: Data, fold
         ),
       );
       readers.push(() => setPath(out, f.key, [...chosen]));
+      continue;
+    }
+
+    if (f.type === 'blouse3d') {
+      readers.push(blouse3DField(container, f, value as Blouse3D | null, (v) => setPath(out, f.key, v)));
       continue;
     }
 
@@ -804,6 +1022,19 @@ function addItem(kind: Kind) {
   });
 }
 
+/** Uploads new 3D design images (watermarked with the design's code); null when there are none. */
+async function finish3D(code: string, draft: Draft3D | null): Promise<Blouse3D | null> {
+  if (!draft) return null;
+  const parts: Blouse3D['parts'] = {};
+  for (const { key } of PARTS) {
+    const p = draft.parts[key];
+    if (!p) continue;
+    const { file, ...place } = p;
+    parts[key] = { ...place, url: file ? await upload3DImage(file, code) : place.url };
+  }
+  return Object.keys(parts).length ? { ...draft, parts } : null;
+}
+
 /** Uploads new photos (watermarked with the design's code) and returns the final URL list. */
 async function finishPhotos(code: string, photos: (string | File)[]) {
   const urls: string[] = [];
@@ -840,16 +1071,18 @@ function editDesign(d: Design | null) {
     if (!photos.length) throw new Error('Add at least one photo.');
     const patch = designPatch(out);
     const target = d ?? (await insertDesign({ ...patch, images: [] }));
-    const oldMedia = d ? [...d.images, d.video] : [];
+    const oldMedia = d ? [...d.images, d.video, ...urls3D(d.blouse3d)] : [];
     let images: string[];
+    let blouse3d: Blouse3D | null;
     try {
       images = await finishPhotos(target.code, photos);
+      blouse3d = await finish3D(target.code, out.blouse3d as Draft3D | null);
     } catch (err) {
       if (!d) await deleteDesign(target).catch(() => {});
       throw err;
     }
-    await updateDesign(target, { ...patch, images });
-    const keep = new Set<unknown>([...images, target.video]);
+    await updateDesign(target, { ...patch, images, blouse3d });
+    const keep = new Set<unknown>([...images, target.video, ...urls3D(blouse3d)]);
     await removeMedia(oldMedia.filter((u) => u && !keep.has(u)));
   });
 }
@@ -1177,6 +1410,7 @@ function renderDesigns() {
             'div',
             { class: 'adm__badges' },
             d.featured ? el('span', { class: 'adm__badge' }, 'Featured') : null,
+            d.blouse3d ? el('span', { class: 'adm__badge' }, '3D') : null,
             !d.available ? el('span', { class: 'adm__badge adm__badge--warn' }, 'Not available') : null,
             d.hidden ? el('span', { class: 'adm__badge adm__badge--warn' }, 'Hidden') : null,
             !d.images.length ? el('span', { class: 'adm__badge adm__badge--warn' }, 'No photo – not shown') : null,
