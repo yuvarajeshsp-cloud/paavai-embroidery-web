@@ -1,0 +1,141 @@
+---
+// Public Blouse Studio: try your own PNG/DST embroidery on the 3D mannequin.
+// Everything happens in the visitor's browser; nothing is uploaded.
+import Base from '../layouts/Base.astro';
+import { whatsappLink } from '../config/site';
+import { t, type Lang } from '../i18n/strings';
+import { FABRIC_COLORS, PARTS } from '../lib/blouse3d';
+import '../styles/studio.css';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+const L = s.studio;
+const config = {
+  labels: L,
+  partNames: PARTS.map((p) => p[lang]),
+  swatches: FABRIC_COLORS.map((c) => ({ hex: c.hex, label: c[lang] })),
+};
+---
+
+<Base lang={lang} title={L.title} description={L.metaDescription} path="/studio">
+  <section class="section studio">
+    <div class="container">
+      <p class="studio__eyebrow">{L.eyebrow}</p>
+      <h1>{L.title}</h1>
+      <p class="studio__intro">{L.intro}</p>
+
+      <div class="studio__layout" data-studio={JSON.stringify(config)}>
+        <div class="studio__main">
+          <div class="stu-stage studio__stage" data-stage>
+            <p class="stu-stage__status" data-status role="status">{L.loading}</p>
+            <div class="stu-neckbar" data-neckbar hidden></div>
+            <div class="studio__zoom">
+              <button type="button" class="stu-btn stu-btn--small" data-zoom="0.35" aria-label={L.zoomOut}>−</button>
+              <button type="button" class="stu-btn stu-btn--small" data-zoom="-0.35" aria-label={L.zoomIn}>+</button>
+            </div>
+          </div>
+          <div class="studio__views" role="group">
+            {(['front', 'back', 'right', 'left'] as const).map((v) => (
+              <button type="button" class="stu-btn" data-view={v} aria-pressed={v === 'front' ? 'true' : 'false'}>{L.views[v]}</button>
+            ))}
+            <button type="button" class="stu-btn" data-spin aria-pressed="false">↻ {L.rotate}</button>
+            <button type="button" class="stu-btn" data-save>{L.save}</button>
+          </div>
+          <p class="studio__hint">{L.hint}</p>
+          <p class="studio__status" data-message role="status" aria-live="polite"></p>
+        </div>
+
+        <aside class="studio__panel" data-controls aria-label={L.designs}></aside>
+      </div>
+
+      <div class="studio__foot">
+        <p class="studio__note">{L.note}</p>
+        <div class="studio__cta">
+          <a class="btn btn--whatsapp" href={whatsappLink(L.waText)} data-wa="studio" rel="noopener">{L.enquire}</a>
+          <p class="studio__note">{L.enquireHint}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .studio { padding-top: clamp(24px, 4vw, 40px); }
+  .studio__eyebrow { margin: 0 0 6px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  .studio__intro { max-width: 62ch; color: var(--ink-soft); margin: 0 0 20px; }
+  .studio__layout { display: grid; gap: 20px; align-items: start; }
+  @media (min-width: 900px) {
+    .studio__layout { grid-template-columns: minmax(0, 1fr) 340px; }
+    .studio__main { position: sticky; top: 84px; }
+  }
+  .studio__main { display: grid; gap: 12px; min-width: 0; }
+  .studio__stage { height: min(72vh, 680px); min-height: 420px; }
+  .studio__zoom { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; z-index: 3; }
+  .studio__zoom .stu-btn { width: 40px; padding: 0; font-size: 1.2rem; }
+  .studio__views { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .studio__hint { margin: 0; text-align: center; font-size: 0.85rem; color: var(--ink-soft); }
+  .studio__status { margin: 0; min-height: 1.5em; text-align: center; font-size: 0.9rem; color: var(--accent); }
+  .studio__status[data-error='true'] { color: #a3242f; }
+  .studio__panel { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; min-width: 0; }
+  .studio__foot { display: grid; gap: 16px; margin-top: 24px; }
+  @media (min-width: 900px) { .studio__foot { grid-template-columns: 1fr auto; align-items: start; } }
+  .studio__note { margin: 0; font-size: 0.88rem; color: var(--ink-soft); max-width: 62ch; }
+  .studio__cta { display: grid; gap: 8px; justify-items: start; }
+</style>
+
+<script>
+  import { mountStudioControls, type Hooks } from '../scripts/studio-ui';
+
+  const layout = document.querySelector<HTMLElement>('[data-studio]')!;
+  const config = JSON.parse(layout.dataset.studio!);
+  const L = config.labels;
+  const stage = layout.querySelector<HTMLElement>('[data-stage]')!;
+  const loading = layout.querySelector<HTMLElement>('[data-status]')!;
+  const message = layout.querySelector<HTMLElement>('[data-message]')!;
+  const viewButtons = [...layout.querySelectorAll<HTMLButtonElement>('[data-view]')];
+  const spin = layout.querySelector<HTMLButtonElement>('[data-spin]')!;
+
+  const status = (text: string, error = false) => {
+    message.textContent = text;
+    message.dataset.error = String(error);
+  };
+  const hooks: Hooks = {
+    // The engine's own messages are English; translate the routine ones.
+    onStatus: (text, error) => status(text === 'Neckline updated.' ? L.neckUpdated : text === 'Updating neckline…' ? '…' : text, error),
+    onView: (name) => viewButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name))),
+    onAutoRotate: (on) => spin.setAttribute('aria-pressed', String(on)),
+  };
+
+  try {
+    const { createStudio } = await import('../lib/studio/engine.js');
+    // The engine reads callbacks from this same object, so the controls can add theirs later.
+    const studio = await createStudio(stage, Object.assign(hooks, { fabric: config.swatches[0].hex, sampleBorder: true }));
+    mountStudioControls(layout.querySelector<HTMLElement>('[data-controls]')!, studio, {
+      labels: L,
+      partNames: config.partNames,
+      swatches: config.swatches,
+      hooks,
+      status,
+      sampleToggle: true,
+      neckBar: layout.querySelector<HTMLElement>('[data-neckbar]')!,
+    });
+    loading.hidden = true;
+    viewButtons.forEach((b) => b.addEventListener('click', () => studio.view(b.dataset.view!)));
+    spin.addEventListener('click', () => studio.setAutoRotate(!studio.isAutoRotating()));
+    layout.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach((b) => b.addEventListener('click', () => studio.zoomBy(Number(b.dataset.zoom))));
+    layout.querySelector('[data-save]')!.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.download = 'paavai-blouse.png';
+      a.href = studio.capture();
+      a.click();
+      status(L.saved);
+    });
+  } catch (err) {
+    console.error(err);
+    loading.textContent = L.fail;
+  }
+</script>

@@ -3,7 +3,7 @@
 Public website for **paavaifashions.com**: English + Tamil, built with
 [Astro](https://astro.build) and hosted on Netlify.
 
-- **Pages:** Home, Designs (catalogue with search and filters, a page per category and per design), Services & prices, About, Contact, Privacy — each at `/…` (English) and `/ta/…` (Tamil).
+- **Pages:** Home, Designs (catalogue with search and filters, a page per category and per design, "View in 3D" on a blouse mannequin), 3D Studio (customers try their own PNG/DST embroidery on the mannequin), Services & prices, About, Contact, Privacy — each at `/…` (English) and `/ta/…` (Tamil).
 - **Admin page** at `/admin`, signed in with a Shop Manager account (Administrator/Manager): upload designs (bulk, watermarked), manage categories and prices, edit reviews, services, logo, Instagram/Google/Facebook links, address and hours. Content lives in the Shop Manager Supabase project; **Publish website** rebuilds the site.
 - **Enquiries:** the contact form is saved by **Netlify Forms** (e-mail alerts) and then opens WhatsApp with the message pre-filled, including where the visitor came from (e.g. *via Instagram ad – diwali*).
 - **Meta:** Pixel + Conversions API (deduplicated), Instagram feed, Instagram/Facebook Shop catalog feed at `/catalog.xml`, UTM attribution, cookie consent. See [docs/META_SETUP.md](docs/META_SETUP.md).
